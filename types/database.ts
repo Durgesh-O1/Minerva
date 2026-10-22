@@ -170,3 +170,19 @@ export interface DatabaseSchema {
   lastUpdated: string;
   students: Student[];
 }
+
+export interface Diagnosis {
+  misconception_id: MisconceptionId;
+  confidence: number; // 0 to 1
+  evidence: string;
+  status: MisconceptionStatus;
+}
+
+export interface TutorResponse {
+  reply: string;
+  diagnosis: Diagnosis;
+  hint_level: number; // 0 to 3
+  related_concepts: string[];
+  understood: boolean;
+  shortcut?: string;
+}
