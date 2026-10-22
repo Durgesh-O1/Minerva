@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, ArrowRight, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface Recommendation {
@@ -29,27 +29,28 @@ export default function ActionRecommendations({ recommendations }: ActionRecomme
   };
 
   return (
-    <div className="bg-linear-to-br from-indigo-900 via-indigo-950 to-slate-950 rounded-2xl p-6 text-white shadow-lg border border-indigo-800/50">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-indigo-800/60 gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center border border-indigo-400/30">
-            <Sparkles className="w-5 h-5" />
+    <div className="rounded-2xl p-6 text-white shadow-xl border border-white/20 backdrop-blur-xl transition-all duration-300"
+         style={{ background: 'rgba(34, 34, 59, 0.94)', boxShadow: '0 12px 40px rgba(34, 34, 59, 0.18)' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-white/15 gap-3">
+        <div className="flex items-center gap-3">
+          <div className="glass-icon w-9 h-9 rounded-xl bg-white/10 text-white border-white/30">
+            <Sparkles className="w-5 h-5 text-[#F2E9E4]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase font-bold tracking-wider text-indigo-400">
+              <span className="text-xs uppercase font-extrabold tracking-wider text-[#C9ADA7]">
                 Teacher Action Plan
               </span>
-              <span className="text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/20">
+              <span className="text-[10px] bg-white/15 text-[#F2E9E4] px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-xs font-semibold">
                 AI Diagnostic Synthesis
               </span>
             </div>
-            <h2 className="text-lg font-bold text-white mt-0.5">
+            <h2 className="text-lg font-extrabold text-white mt-0.5 tracking-tight">
               High-Impact Pedagogical Interventions
             </h2>
           </div>
         </div>
-        <p className="text-xs text-indigo-200/70 max-w-xs">
+        <p className="text-xs text-[#C9ADA7] max-w-xs font-medium">
           Targeted interventions derived automatically from class misconception clustering.
         </p>
       </div>
@@ -61,10 +62,10 @@ export default function ActionRecommendations({ recommendations }: ActionRecomme
           return (
             <div 
               key={rec.id}
-              className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
+              className={`p-4 rounded-xl border transition-all flex flex-col justify-between backdrop-blur-md ${
                 isDone 
-                  ? 'bg-emerald-950/40 border-emerald-500/40 opacity-75' 
-                  : 'bg-indigo-950/40 border-indigo-700/50 hover:border-indigo-500/70'
+                  ? 'bg-emerald-950/40 border-emerald-500/40 opacity-80' 
+                  : 'bg-white/5 border-white/15 hover:border-white/35 hover:bg-white/10'
               }`}
             >
               <div>
@@ -83,21 +84,21 @@ export default function ActionRecommendations({ recommendations }: ActionRecomme
                   )}
                 </div>
 
-                <h3 className="font-bold text-sm text-white leading-snug">
+                <h3 className="font-extrabold text-sm text-[#F2E9E4] leading-snug">
                   {rec.title}
                 </h3>
-                <p className="text-xs text-indigo-200/80 mt-2 leading-relaxed">
+                <p className="text-xs text-[#C9ADA7] mt-2 leading-relaxed font-medium">
                   {rec.detail}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-indigo-800/40">
+              <div className="mt-4 pt-3 border-t border-white/15">
                 <button
                   onClick={() => toggleAction(rec.id)}
-                  className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     isDone
-                      ? 'bg-emerald-800/50 text-emerald-200 hover:bg-emerald-800/70'
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs'
+                      ? 'bg-emerald-800/60 text-emerald-100 hover:bg-emerald-800/80 border border-emerald-500/40'
+                      : 'bg-[#F2E9E4] hover:bg-white text-[#22223B] shadow-sm hover:translate-y-[-1px]'
                   }`}
                 >
                   {isDone ? (

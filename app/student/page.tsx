@@ -99,7 +99,7 @@ export default function StudentPage() {
 
   if (loading || !student) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      <div className="min-h-screen flex flex-col font-sans">
         <Navbar />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="flex flex-col items-center gap-3 text-slate-500">
@@ -115,7 +115,7 @@ export default function StudentPage() {
   const resolvedCount = student.misconceptions.filter((m) => m.status === 'resolved').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen flex flex-col font-sans">
       <Navbar
         clockOffsetDays={clockOffsetDays}
         onAdvanceClock={(d) => handleAdvanceClock(d)}
@@ -124,7 +124,7 @@ export default function StudentPage() {
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-5">
         {/* Profile & Sub-Navigation Header */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="glass-panel rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl bg-linear-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center font-black text-lg shadow-sm">
               AC

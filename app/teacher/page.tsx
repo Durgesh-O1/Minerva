@@ -43,7 +43,7 @@ export default function TeacherDashboardPage() {
   }, [fetchData]);
 
   return (
-    <div className="min-h-screen bg-slate-50/60 flex flex-col font-sans">
+    <div className="min-h-screen flex flex-col font-sans">
       <Navbar 
         onResetData={() => fetchData()} 
         onAdvanceClock={() => fetchData()} 
@@ -55,32 +55,32 @@ export default function TeacherDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse shadow-xs" />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#4A4E69]">
                 Live Cohort Analytics
               </span>
-              <span className="text-xs text-slate-400">• Grade 6 Math</span>
+              <span className="text-xs text-[#9A8C98] font-medium">• Grade 6 Math</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#22223B] tracking-tight mt-1">
               Teacher Command Center
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-[#4A4E69] font-medium mt-1">
               Real-time learning-gap diagnosis & prerequisite bottleneck detection
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
-              <Radio className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+            <div className="glass-panel-subtle flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs text-[#4A4E69] font-semibold">
+              <Radio className="w-3.5 h-3.5 text-[#22223B] animate-pulse" />
               <span>Auto-sync with student sessions</span>
             </div>
 
             <button
               onClick={() => fetchData()}
               disabled={refreshing}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="glass-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#22223B] rounded-xl cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-indigo-600' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#22223B]' : ''}`} />
               <span>{refreshing ? 'Syncing...' : 'Sync Now'}</span>
             </button>
           </div>
@@ -88,22 +88,22 @@ export default function TeacherDashboardPage() {
 
         {/* Loading State */}
         {loading && (
-          <div className="py-24 flex flex-col items-center justify-center text-slate-400 space-y-3">
-            <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium">Aggregating student misconceptions & concept graph...</p>
+          <div className="py-24 flex flex-col items-center justify-center text-[#4A4E69] space-y-3">
+            <div className="w-10 h-10 border-3 border-[#22223B] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold">Aggregating student misconceptions & concept graph...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="p-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+          <div className="p-6 rounded-2xl glass-panel border-[rgba(225,29,72,0.3)] text-[#BE123C] flex items-center justify-between">
             <div>
-              <p className="font-bold text-sm">Failed to load analytics</p>
+              <p className="font-extrabold text-sm">Failed to load analytics</p>
               <p className="text-xs mt-0.5">{error}</p>
             </div>
             <button
               onClick={() => fetchData()}
-              className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700"
+              className="px-3 py-1.5 rounded-lg bg-[#E11D48] text-white text-xs font-bold hover:bg-[#BE123C] shadow-xs cursor-pointer"
             >
               Retry
             </button>
@@ -144,11 +144,13 @@ export default function TeacherDashboardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 mt-12">
-        <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="border-t border-white/60 bg-[rgba(242,233,228,0.7)] backdrop-blur-md py-6 mt-12">
+        <div className="max-w-7xl mx-auto px-4 text-center text-xs text-[#4A4E69] flex flex-col sm:flex-row items-center justify-between gap-2 font-medium">
           <span>Minerva AI Tutor • Hackathon Demo Prototype</span>
-          <span className="flex items-center gap-1 text-slate-500 font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+          <span className="flex items-center gap-1.5 text-[#22223B] font-bold">
+            <span className="glass-icon glass-icon-indigo w-5 h-5 rounded-md">
+              <Sparkles className="w-3 h-3 text-[#22223B]" />
+            </span>
             Personalised Learning Through Learning-Gap Detection
           </span>
         </div>
