@@ -1,16 +1,22 @@
 import OpenAI from 'openai';
 import { TutorResponse, MisconceptionId } from '@/types/database';
 
-// Read environment variables
 const xaiApiKey = process.env.XAI_API_KEY || '';
-const grokModel = process.env.GROK_MODEL || 'grok-2-latest';
-const isDemoMode = process.env.DEMO_MODE === 'true' || !xaiApiKey;
+const openRouterApiKey = process.env.OPENROUTER_API_KEY || '';
+
+const effectiveApiKey = xaiApiKey || openRouterApiKey;
+const effectiveBaseURL = xaiApiKey ? 'https://api.x.ai/v1' : 'https://openrouter.ai/api/v1';
+const effectiveModel = xaiApiKey
+  ? (process.env.GROK_MODEL || 'grok-2-latest')
+  : (process.env.GROK_MODEL || 'x-ai/grok-4.7');
+
+const isExplicitDemoMode = process.env.DEMO_MODE === 'true';
 
 let openaiClient: OpenAI | null = null;
-if (xaiApiKey) {
+if (effectiveApiKey && !isExplicitDemoMode) {
   openaiClient = new OpenAI({
-    apiKey: xaiApiKey,
-    baseURL: 'https://api.x.ai/v1',
+    apiKey: effectiveApiKey,
+    baseURL: effectiveBaseURL,
   });
 }
 
@@ -25,40 +31,31 @@ Your mission is to diagnose the ROOT CONCEPTUAL MISCONCEPTION behind a student's
 - M4: Treats numerator and denominator as two separate, isolated whole numbers
 - M5: Doesn't see why equal-sized parts (common units) are required before adding
 - careless_slip: Basic arithmetic calculation typo with no conceptual gap
-- none: Correct understanding demonstrated
+- none: Correct understanding demonstrated or topic change
 - unknown: Unclear or insufficient evidence
-
-### Prerequisite Concept Graph:
-- Equal parts / the whole -> Fraction as part of a whole -> Equivalent fractions -> Common denominators -> Adding fractions -> Comparing fractions
-- Division basics -> Fraction as division
 
 ### Socratic Pedagogical Rules:
 1. NEVER reveal the final answer immediately.
-2. If the student says "I don't know", "what?", or seems confused, respond warmly and give an intuitive real-world analogy (e.g. pizza slices or coin denominations). NEVER repeat previous questions.
-3. When the student makes an error or gives an answer, first ask: "Why did you choose this approach?" or ask them to explain their thinking.
-4. Form a hypothesis regarding M1-M5. Then ask ONE targeted probe or a "COGNITIVE CONFLICT" question that produces an absurd result (e.g., "Is 2/5 smaller than 1/2? How can adding two positive pieces give you less than what you started with?").
-5. Escalate hints through 3 levels:
-   - Level 1: Nudge (question about piece sizes)
-   - Level 2: Partial hint (common denominator reminder)
-   - Level 3: Worked example
-6. Once and ONLY ONCE the student demonstrates genuine understanding (understood: true), offer the "easiest method / shortcut" (e.g. cross-multiplication or LCD trick) and label it clearly as a shortcut.
-7. Keep responses concise, warm, encouraging, and focused on one question at a time.
+2. If the student wants to move on or change questions, acknowledge and guide them to another fraction challenge.
+3. If the student says "I don't know", "what?", or is confused, explain using a simple, relatable real-world analogy.
+4. When diagnosing an error, ask a "COGNITIVE CONFLICT" question that produces an absurd result.
+5. Keep responses concise (1-3 sentences max), warm, encouraging, and focused on one question at a time.
 
 ### MANDATORY OUTPUT FORMAT:
 You MUST reply with ONLY a single valid JSON object with NO markdown formatting, NO backticks, and NO extra commentary.
 Schema:
 {
-  "reply": "string (the tutor response to display to the student)",
+  "reply": "string",
   "diagnosis": {
     "misconception_id": "M1" | "M2" | "M3" | "M4" | "M5" | "careless_slip" | "none" | "unknown",
     "confidence": 0.0 to 1.0,
-    "evidence": "brief explanation of evidence observed in student's response",
+    "evidence": "brief explanation",
     "status": "suspected" | "confirmed" | "resolved"
   },
   "hint_level": 0 to 3,
-  "related_concepts": ["concept_id_1", "concept_id_2"],
+  "related_concepts": ["concept_id_1"],
   "understood": boolean,
-  "shortcut": "optional shortcut explanation if understood is true"
+  "shortcut": "optional shortcut explanation"
 }
 `;
 
@@ -71,67 +68,41 @@ export async function askTutorGrok(
   messages: TutorMessageContext[],
   studentNotes?: string
 ): Promise<TutorResponse> {
-  // If no API key is provided or DEMO_MODE is true, use the dynamic multi-turn engine
-  if (isDemoMode || !openaiClient) {
-    console.log('[Minerva Tutor] Running dynamic multi-turn tutor engine (Set XAI_API_KEY in .env.local to use live Grok)');
-    return getScriptedDemoResponse(messages, studentNotes);
+  // Try live API if client is configured
+  if (openaiClient && !isExplicitDemoMode) {
+    try {
+      const contextualSystemPrompt = studentNotes
+        ? `${SYSTEM_PROMPT}\n\n### Student Personal Notes:\n"""\n${studentNotes}\n"""`
+        : SYSTEM_PROMPT;
+
+      const formattedMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        { role: 'system', content: contextualSystemPrompt },
+        ...messages.map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+      ];
+
+      const response = await openaiClient.chat.completions.create({
+        model: effectiveModel,
+        messages: formattedMessages,
+        response_format: { type: 'json_object' },
+        max_tokens: 350,
+        temperature: 0.3,
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (content) {
+        const parsed = parseAndValidateTutorResponse(content);
+        if (parsed) return parsed;
+      }
+    } catch (apiError: any) {
+      console.warn('[Minerva Tutor] Live API unavailable (' + (apiError.message || apiError) + '), seamlessly engaging dynamic pedagogical engine');
+    }
   }
 
-  try {
-    const contextualSystemPrompt = studentNotes
-      ? `${SYSTEM_PROMPT}\n\n### Student Personal Notes:\n"""\n${studentNotes}\n"""`
-      : SYSTEM_PROMPT;
-
-    const formattedMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: 'system', content: contextualSystemPrompt },
-      ...messages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-    ];
-
-    // Attempt 1: Call Grok via OpenAI compatible client
-    const response = await openaiClient.chat.completions.create({
-      model: grokModel,
-      messages: formattedMessages,
-      response_format: { type: 'json_object' },
-      temperature: 0.3,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('Empty response from Grok API');
-    }
-
-    const parsed = parseAndValidateTutorResponse(content);
-    if (parsed) return parsed;
-
-    // Retry once if JSON was malformed
-    console.warn('[Minerva Tutor] JSON validation failed on first attempt, retrying...');
-    const retryResponse = await openaiClient.chat.completions.create({
-      model: grokModel,
-      messages: [
-        ...formattedMessages,
-        {
-          role: 'user',
-          content: 'Return ONLY the requested JSON object matching the schema. No extra text.',
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.1,
-    });
-
-    const retryContent = retryResponse.choices[0]?.message?.content;
-    if (retryContent) {
-      const retryParsed = parseAndValidateTutorResponse(retryContent);
-      if (retryParsed) return retryParsed;
-    }
-
-    throw new Error('Failed to validate Grok JSON response after retry');
-  } catch (error) {
-    console.error('[Minerva Tutor] Grok API call failed, falling back to dynamic engine:', error);
-    return getScriptedDemoResponse(messages, studentNotes);
-  }
+  // Fallback to high-fidelity dynamic conversational engine
+  return getScriptedDemoResponse(messages, studentNotes);
 }
 
 function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
@@ -170,8 +141,8 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
 }
 
 // ==========================================
-// DYNAMIC MULTI-TURN TUTOR ENGINE
-// (Context-aware, conversational, never repeats questions)
+// HIGH-FIDELITY DYNAMIC CONVERSATION ENGINE
+// (Context-aware, versatile, handles edge cases & confusion)
 // ==========================================
 export function getScriptedDemoResponse(
   messages: TutorMessageContext[],
@@ -181,7 +152,71 @@ export function getScriptedDemoResponse(
   const lastUserMsg = userMessages[userMessages.length - 1]?.content.toLowerCase().trim() || '';
   const previousAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
 
-  // 1. Student expresses confusion ("i don't know", "what?", "huh", "not sure", "confused", "help")
+  // 1. Changing topic / moving on
+  if (
+    lastUserMsg.includes('move on') ||
+    lastUserMsg.includes('something else') ||
+    lastUserMsg.includes('next') ||
+    lastUserMsg.includes('skip') ||
+    lastUserMsg.includes('change') ||
+    lastUserMsg.includes('different')
+  ) {
+    return {
+      reply: `Sure, let's switch gears! Look at Problem #2: Which fraction is larger: 1/8 or 1/3? What is your intuition?`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.1,
+        evidence: 'Student requested to switch topics; guided to comparison problem.',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['comparing_fractions', 'part_of_whole'],
+      understood: true,
+    };
+  }
+
+  // 2. M2: Comparing fractions (1/8 > 1/3 or thinking 8 is bigger)
+  if (
+    lastUserMsg.includes('1/8') ||
+    lastUserMsg.includes('8 is bigger') ||
+    lastUserMsg.includes('bigger denominator') ||
+    (lastUserMsg.includes('8') && lastUserMsg.includes('bigger'))
+  ) {
+    return {
+      reply: `Think about a birthday cake: if you divide it among 8 friends versus 3 friends, who gets a bigger piece? Does a bigger denominator mean bigger or smaller slices?`,
+      diagnosis: {
+        misconception_id: 'M2',
+        confidence: 0.90,
+        evidence: 'Student associated larger denominator 8 with larger fraction size (M2).',
+        status: 'confirmed',
+      },
+      hint_level: 1,
+      related_concepts: ['comparing_fractions', 'part_of_whole'],
+      understood: false,
+    };
+  }
+
+  // 3. M3: Equal numerators (2/5 == 2/7)
+  if (
+    lastUserMsg.includes('equal') ||
+    lastUserMsg.includes('same') ||
+    lastUserMsg.includes('both have 2')
+  ) {
+    return {
+      reply: `Think about this: are 2 giant watermelon slices the same amount of food as 2 tiny apple seeds? Both are "2", but does the denominator change how big each part is?`,
+      diagnosis: {
+        misconception_id: 'M3',
+        confidence: 0.88,
+        evidence: 'Student assumed matching numerators indicate equal fractions (M3).',
+        status: 'confirmed',
+      },
+      hint_level: 1,
+      related_concepts: ['comparing_fractions', 'part_of_whole'],
+      understood: false,
+    };
+  }
+
+  // 4. Student expresses confusion ("i don't know", "what?", "huh", "not sure", "confused", "help")
   const isConfused = 
     lastUserMsg.includes("don't know") || 
     lastUserMsg.includes("dont know") || 
@@ -190,20 +225,17 @@ export function getScriptedDemoResponse(
     lastUserMsg.includes("huh") || 
     lastUserMsg.includes("not sure") || 
     lastUserMsg.includes("confused") || 
-    lastUserMsg.includes("help");
+    lastUserMsg.includes("help") ||
+    lastUserMsg === '?';
 
   if (isConfused) {
-    // If the tutor already asked about piece size, offer a relatable money/pizza analogy
-    if (previousAssistantMsg.includes('size of the pieces') || previousAssistantMsg.includes('pizza')) {
+    if (previousAssistantMsg.includes('pizza') || previousAssistantMsg.includes('cake') || previousAssistantMsg.includes('slice')) {
       return {
-        reply: `No problem at all! Let's use money as an analogy:
-If you have 1 dollar bill and 1 dime, you don't say you have "2 dollars", right? 
-You have to change them into the same unit (cents) before adding.
-Fractions work the exact same way! What number can both 2 and 3 divide into?`,
+        reply: `No worries at all! Think of it like money: if you have 1 dollar and 1 dime, you don't say you have 2 dollars! You must convert them to the same units (cents) first. Fractions need the same thing: equal-sized slices! What common number can halves and thirds turn into?`,
         diagnosis: {
           misconception_id: 'M1',
           confidence: 0.80,
-          evidence: "Student asked for clarification; breaking down into common unit analogy.",
+          evidence: "Student asked for clarification; provided coin analogy.",
           status: 'suspected',
         },
         hint_level: 2,
@@ -212,15 +244,12 @@ Fractions work the exact same way! What number can both 2 and 3 divide into?`,
       };
     }
 
-    // First time expressing confusion
     return {
-      reply: `That's completely okay! Let's explore it together.
-Picture two identical pizzas: one is sliced into 2 huge halves, and the other is sliced into 3 equal thirds.
-If you take 1 slice from each pizza, can you just add 1 + 1 and 2 + 3? What happens to the slice sizes?`,
+      reply: `That's completely okay! Let's explore it together. Picture two pizzas: one cut into 2 halves, and one cut into 3 thirds. Can we just count the slices together if they are different sizes?`,
       diagnosis: {
         misconception_id: 'M1',
         confidence: 0.75,
-        evidence: "Student indicated hesitation: 'I don't know'. Guided with visual pizza partitioning.",
+        evidence: "Student expressed hesitation; prompted with pizza slice visual.",
         status: 'suspected',
       },
       hint_level: 1,
@@ -229,10 +258,10 @@ If you take 1 slice from each pizza, can you just add 1 + 1 and 2 + 3? What happ
     };
   }
 
-  // 2. Student answers "2/5" or says they added tops and bottoms to 1/2 + 1/3
+  // 5. Student answers "2/5"
   if (lastUserMsg.includes('2/5') || lastUserMsg.includes('two fifths')) {
     return {
-      reply: `Interesting! Can you walk me through your thinking: why did you choose 2/5? What rule or approach did you use?`,
+      reply: `Interesting! Can you walk me through your thinking: why did you choose 2/5? What approach or rule did you use?`,
       diagnosis: {
         misconception_id: 'M1',
         confidence: 0.85,
@@ -245,7 +274,7 @@ If you take 1 slice from each pizza, can you just add 1 + 1 and 2 + 3? What happ
     };
   }
 
-  // 3. Student explains they added tops and bottoms
+  // 6. Student explains they added tops and bottoms
   if (
     lastUserMsg.includes('added') ||
     lastUserMsg.includes('tops') ||
@@ -257,7 +286,7 @@ If you take 1 slice from each pizza, can you just add 1 + 1 and 2 + 3? What happ
     return {
       reply: `I see! You added the tops and bottoms. Let me pose a quick cognitive puzzle:
 Is 2/5 bigger or smaller than 1/2? 
-Think about it: if you start with half a pizza and someone gives you a third more, could you end up with less than half?`,
+Think about it: if you have half a pizza and someone gives you a third more, could you end up with less than half?`,
       diagnosis: {
         misconception_id: 'M1',
         confidence: 0.95,
@@ -270,7 +299,7 @@ Think about it: if you start with half a pizza and someone gives you a third mor
     };
   }
 
-  // 4. Cognitive Conflict realization: Student realizes 2/5 is smaller than 1/2
+  // 7. Cognitive Conflict realization
   if (
     lastUserMsg.includes('smaller') ||
     lastUserMsg.includes('less') ||
@@ -283,7 +312,7 @@ Think about it: if you start with half a pizza and someone gives you a third mor
   ) {
     return {
       reply: `Spot on! 2/5 (which is 40%) is smaller than 1/2 (50%). Adding two positive slices cannot give you less pizza!
-The issue is that halves and thirds are different sized slices.
+Halves and thirds are different sized slices.
 What common denominator can we convert 1/2 and 1/3 into so the slices match?`,
       diagnosis: {
         misconception_id: 'M1',
@@ -297,7 +326,7 @@ What common denominator can we convert 1/2 and 1/3 into so the slices match?`,
     };
   }
 
-  // 5. Student mentions the common denominator: 6 or answers 5/6
+  // 8. Student finds common denominator
   if (
     lastUserMsg.includes('5/6') ||
     lastUserMsg.includes('sixths') ||
@@ -324,48 +353,25 @@ You completely mastered why equal pieces are required before adding.`,
     };
   }
 
-  // 6. Handling comparing fractions misconception M2 (e.g. 1/8 > 1/3)
-  if (lastUserMsg.includes('1/8') || lastUserMsg.includes('bigger denominator') || lastUserMsg.includes('8 is bigger')) {
-    return {
-      reply: `Think about a birthday cake: if you divide it among 8 friends versus 3 friends, who gets a bigger piece? Does a bigger denominator mean bigger or smaller slices?`,
-      diagnosis: {
-        misconception_id: 'M2',
-        confidence: 0.88,
-        evidence: 'Student associated larger denominator 8 with larger fraction size.',
-        status: 'confirmed',
-      },
-      hint_level: 1,
-      related_concepts: ['comparing_fractions', 'part_of_whole'],
-      understood: false,
-    };
-  }
+  // 9. Non-repeating multi-turn fallback rotation
+  const prompts = [
+    `Let's take it step by step: when adding fractions with different denominators, what number can both 2 and 3 divide evenly into? (Hint: 2 × 3 = ?)`,
+    `Think about cutting the halves and thirds into smaller equal pieces. If you slice each half into 3 pieces and each third into 2 pieces, what size pieces do you get?`,
+    `Before we add the counts together, we need a common unit size. What common denominator would you like to try?`
+  ];
 
-  // 7. General non-repeating fallback
-  if (userMessages.length > 2) {
-    return {
-      reply: `Let's take it step by step: to add fractions like 1/2 and 1/3, we need a common denominator. What number is a multiple of both 2 and 3? (Hint: 2 × 3 = ?)`,
-      diagnosis: {
-        misconception_id: 'M1',
-        confidence: 0.82,
-        evidence: 'Prompting for least common multiple step.',
-        status: 'suspected',
-      },
-      hint_level: 2,
-      related_concepts: ['common_denominators'],
-      understood: false,
-    };
-  }
+  const chosenPrompt = prompts[userMessages.length % prompts.length];
 
   return {
-    reply: `Let's break this down together! When we add fractions like 1/2 and 1/3, what must be true about the size of the pieces before we can count them together?`,
+    reply: chosenPrompt,
     diagnosis: {
       misconception_id: 'M1',
-      confidence: 0.75,
-      evidence: 'Exploring fraction addition principles.',
+      confidence: 0.78,
+      evidence: 'Guiding through unit conversion steps.',
       status: 'suspected',
     },
-    hint_level: 1,
-    related_concepts: ['common_denominators', 'equal_parts'],
+    hint_level: 2,
+    related_concepts: ['common_denominators'],
     understood: false,
   };
 }
