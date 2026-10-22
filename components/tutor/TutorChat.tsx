@@ -155,7 +155,6 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
       if (!res.ok) throw new Error('Tutor response failed');
       const data: TutorResponse = await res.json();
 
-      // Client-side guard: if reply contains raw JSON string, extract clean text
       let cleanReply = data.reply;
       if (typeof cleanReply === 'string' && cleanReply.trim().startsWith('{') && cleanReply.includes('"reply"')) {
         const match = cleanReply.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
@@ -188,7 +187,7 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         setIsConceptUnderstood(true);
       }
 
-      speakText(data.reply);
+      speakText(cleanReply);
     } catch (err) {
       console.error('Tutor chat error:', err);
       const fallbackMsg: ChatMessage = {
@@ -244,14 +243,14 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         hintLevel={currentHintLevel}
       />
 
-      {/* 3. Main Chat Container with guaranteed tall, spacious height */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[540px] sm:h-[600px] overflow-hidden">
+      {/* 3. Main Chat Container */}
+      <div className="glass-panel rounded-2xl flex flex-col h-[540px] sm:h-[600px] overflow-hidden shadow-md transition-all duration-300">
         {/* Chat toolbar / status */}
-        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs shrink-0">
-          <div className="flex items-center gap-2 text-slate-500 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-semibold text-slate-700">Minerva AI Tutor</span>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <div className="px-4 py-3 bg-[rgba(242,233,228,0.7)] backdrop-blur-md border-b border-[rgba(34,34,59,0.08)] flex items-center justify-between text-xs shrink-0">
+          <div className="flex items-center gap-2 text-[#4A4E69] font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse shadow-xs" />
+            <span className="font-extrabold text-[#22223B]">Minerva AI Tutor</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[rgba(16,185,129,0.12)] text-[#047857] border border-white/70 backdrop-blur-xs">
               Live AI Active
             </span>
           </div>
@@ -266,13 +265,13 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
                   ? 'Show easiest method shortcut'
                   : 'Demonstrate conceptual understanding first to unlock shortcuts'
               }
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                 isConceptUnderstood
                   ? 'bg-linear-to-r from-amber-500 to-orange-500 text-white shadow-xs hover:brightness-105 animate-bounce'
-                  : 'bg-slate-200/80 text-slate-400 cursor-not-allowed'
+                  : 'bg-[rgba(34,34,59,0.06)] text-[#9A8C98] border border-white/50 cursor-not-allowed'
               }`}
             >
-              <Zap className="w-3.5 h-3.5 fill-current" />
+              <Zap className="w-3.5 h-3.5 fill-current text-[#D97706]" />
               <span>Show Easiest Method</span>
               {!isConceptUnderstood && <span className="text-[10px] opacity-75">🔒</span>}
             </button>
@@ -281,13 +280,11 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
             <button
               onClick={() => setTtsEnabled(!ttsEnabled)}
               title={ttsEnabled ? 'Disable Tutor Voice' : 'Enable Tutor Voice'}
-              className={`p-1.5 rounded-lg border transition cursor-pointer ${
-                ttsEnabled
-                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                  : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'
+              className={`glass-btn p-1.5 rounded-xl transition cursor-pointer ${
+                ttsEnabled ? 'bg-white/90 text-[#22223B]' : 'text-[#4A4E69]'
               }`}
             >
-              {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              {ttsEnabled ? <Volume2 className="w-4 h-4 text-[#047857]" /> : <VolumeX className="w-4 h-4 text-[#9A8C98]" />}
             </button>
 
             {/* Notes button */}
@@ -295,9 +292,9 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
               <button
                 onClick={onOpenNotes}
                 title="View or edit your math notes"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-semibold cursor-pointer"
+                className="glass-btn flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[#22223B] text-xs font-bold cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                <FileText className="w-3.5 h-3.5 text-[#4A4E69]" />
                 <span className="hidden sm:inline">My Notes</span>
               </button>
             )}
@@ -317,13 +314,13 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
               >
                 {/* Avatar */}
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs shadow-2xs ${
+                  className={`glass-icon w-8 h-8 rounded-xl shrink-0 text-xs ${
                     isUser
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-linear-to-tr from-violet-600 to-indigo-600 text-white'
+                      ? 'glass-icon-indigo'
+                      : 'glass-icon-grape'
                   }`}
                 >
-                  {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                  {isUser ? <User className="w-4 h-4 text-[#22223B]" /> : <Bot className="w-4 h-4 text-[#22223B]" />}
                 </div>
 
                 {/* Message bubble */}
@@ -331,14 +328,14 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
                   <div
                     className={`p-4 rounded-2xl text-sm leading-relaxed ${
                       isUser
-                        ? 'bg-indigo-600 text-white rounded-tr-xs shadow-xs shadow-indigo-100'
-                        : 'bg-slate-100 text-slate-800 rounded-tl-xs border border-slate-200/60 shadow-2xs'
+                        ? 'bg-[#22223B] text-white rounded-tr-xs shadow-md border border-white/20'
+                        : 'glass-panel-subtle text-[#22223B] rounded-tl-xs border border-white/80 shadow-2xs font-medium'
                     }`}
                   >
                     <div className="whitespace-pre-wrap">{cleanContent(msg.content)}</div>
 
                     {!isUser && msg.content.includes('absurd') && (
-                      <div className="mt-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center gap-2">
+                      <div className="mt-2.5 p-2 rounded-lg bg-[rgba(217,119,6,0.12)] border border-[rgba(217,119,6,0.25)] text-[#B45309] text-xs font-bold flex items-center gap-2">
                         <span className="text-base">⚡</span>
                         <span>Cognitive Conflict: Can a sum be smaller than the pieces you started with?</span>
                       </div>
@@ -346,7 +343,7 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
                   </div>
 
                   <div
-                    className={`flex items-center gap-2 text-[10px] text-slate-400 px-1 ${
+                    className={`flex items-center gap-2 text-[10px] text-[#4A4E69] px-1 font-medium ${
                       isUser ? 'justify-end' : 'justify-start'
                     }`}
                   >
@@ -361,14 +358,14 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
 
           {loading && (
             <div className="flex gap-3 max-w-[80%] mr-auto items-center">
-              <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center text-xs">
-                <Bot className="w-4 h-4" />
+              <div className="glass-icon glass-icon-grape w-8 h-8 rounded-xl">
+                <Bot className="w-4 h-4 text-[#22223B]" />
               </div>
-              <div className="bg-slate-100 border border-slate-200/60 rounded-2xl rounded-tl-xs p-4 flex items-center gap-2 text-xs font-medium text-slate-500">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.4s]" />
-                <span className="ml-1 text-slate-600 font-semibold">Diagnosing student mental model...</span>
+              <div className="glass-panel-subtle rounded-2xl rounded-tl-xs p-4 flex items-center gap-2 text-xs font-medium text-[#4A4E69]">
+                <span className="w-2 h-2 rounded-full bg-[#22223B] animate-bounce" />
+                <span className="w-2 h-2 rounded-full bg-[#22223B] animate-bounce [animation-delay:0.2s]" />
+                <span className="w-2 h-2 rounded-full bg-[#22223B] animate-bounce [animation-delay:0.4s]" />
+                <span className="ml-1 text-[#22223B] font-bold">Diagnosing student mental model...</span>
               </div>
             </div>
           )}
@@ -378,15 +375,15 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
 
         {/* Related concept suggestion chips */}
         {relatedConcepts.length > 0 && (
-          <div className="px-4 py-2 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs shrink-0">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+          <div className="px-4 py-2 bg-[rgba(242,233,228,0.5)] border-t border-[rgba(34,34,59,0.08)] flex flex-wrap items-center gap-2 text-xs shrink-0">
+            <span className="text-[10px] font-bold text-[#4A4E69] uppercase tracking-wider shrink-0">
               Prerequisite Links:
             </span>
             {relatedConcepts.map((c) => (
               <button
                 key={c}
                 onClick={() => onConceptSelect && onConceptSelect(c)}
-                className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 transition shrink-0 font-medium flex items-center gap-1 shadow-2xs cursor-pointer"
+                className="glass-btn px-2.5 py-1 rounded-full text-[#4A4E69] hover:text-[#22223B] transition shrink-0 font-bold flex items-center gap-1 cursor-pointer"
               >
                 <span>Review: {c.replace(/_/g, ' ')}</span>
                 <ArrowRight className="w-3 h-3" />
@@ -396,9 +393,9 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         )}
 
         {/* Quick Demo Shortcuts */}
-        <div className="px-4 py-2 bg-indigo-50/50 border-t border-indigo-100/60 flex flex-wrap items-center gap-2 text-xs shrink-0">
-          <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider shrink-0 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-indigo-600" />
+        <div className="px-4 py-2 bg-[rgba(201,173,167,0.2)] border-t border-white/60 flex flex-wrap items-center gap-2 text-xs shrink-0">
+          <span className="text-[10px] font-extrabold text-[#22223B] uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-[#22223B]" />
             <span>Pitch Demo Steps:</span>
           </span>
           {quickDemoSteps.map((step, idx) => (
@@ -406,7 +403,7 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
               key={idx}
               onClick={() => handleSendMessage(step.text)}
               disabled={loading}
-              className="px-2.5 py-1 rounded-md bg-white border border-indigo-200 text-indigo-900 font-semibold text-[11px] hover:bg-indigo-600 hover:text-white transition shrink-0 shadow-2xs cursor-pointer"
+              className="glass-btn px-2.5 py-1 rounded-lg text-[#22223B] font-bold text-[11px] transition shrink-0 cursor-pointer"
             >
               {step.label}
             </button>
@@ -414,19 +411,19 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         </div>
 
         {/* Input box */}
-        <div className="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
+        <div className="p-3 bg-[rgba(242,233,228,0.75)] border-t border-white/60 flex items-center gap-2 shrink-0">
           {speechSupported && (
             <button
               type="button"
               onClick={toggleListening}
               className={`p-2.5 rounded-xl border transition cursor-pointer ${
                 isListening
-                  ? 'bg-rose-500 text-white border-rose-600 animate-pulse'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200'
+                  ? 'bg-[#E11D48] text-white border-white animate-pulse'
+                  : 'glass-btn text-[#4A4E69]'
               }`}
               title={isListening ? 'Stop listening' : 'Speak your answer (Web Speech API)'}
             >
-              {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5 text-slate-400" />}
+              {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5 text-[#9A8C98]" />}
             </button>
           )}
 
@@ -437,61 +434,18 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             placeholder="Ask any study question or explain your approach (e.g., 'What is gravity?', '1/2 + 1/3 = 2/5')..."
             disabled={loading}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            className="flex-1 bg-white/85 border border-white/90 rounded-xl px-4 py-2.5 text-sm text-[#22223B] placeholder-[#4A4E69]/60 focus:outline-hidden focus:ring-2 focus:ring-[#22223B]/30 focus:bg-white transition"
           />
 
           <button
             onClick={() => handleSendMessage()}
             disabled={!input.trim() || loading}
-            className="p-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-xs cursor-pointer"
+            className="glass-btn-primary p-2.5 rounded-xl font-bold disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
       </div>
-
-      {/* Shortcut / Easiest Method Modal */}
-      {showShortcutModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-200 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-200">
-                <Zap className="w-6 h-6 fill-current" />
-              </div>
-              <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-amber-600">
-                  Concept Mastery Verified
-                </span>
-                <h3 className="text-lg font-extrabold text-slate-900">Easiest Method / Shortcut</h3>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-sm text-slate-800 space-y-2">
-              <p className="font-bold text-amber-900">
-                🦋 The Butterfly Shortcut for Adding Fractions:
-              </p>
-              <div className="font-mono text-xs bg-white p-3 rounded-lg border border-amber-200 space-y-1">
-                <div>1/2 + 1/3</div>
-                <div>1. Cross-multiply 1 × 3 = 3</div>
-                <div>2. Cross-multiply 2 × 1 = 2</div>
-                <div>3. Add numerators: 3 + 2 = 5</div>
-                <div>4. Multiply bottoms: 2 × 3 = 6</div>
-                <div className="font-bold text-indigo-700 pt-1">Result = 5/6!</div>
-              </div>
-              <p className="text-xs text-amber-800/90 italic">
-                &ldquo;Remember: This shortcut works because you are finding equivalent fractions with a common denominator of 6 behind the scenes!&rdquo;
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowShortcutModal(false)}
-              className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition cursor-pointer"
-            >
-              Got it, continue practicing
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

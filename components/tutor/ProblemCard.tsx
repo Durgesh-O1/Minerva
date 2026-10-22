@@ -41,30 +41,30 @@ export default function ProblemCard({ currentProblemIndex, onSelectProblem }: Pr
   const problem = PROBLEMS[currentProblemIndex] || PROBLEMS[0];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 transition-all">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2.5">
-          <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-            <BookOpen className="w-5 h-5" />
-          </span>
+    <div className="glass-panel rounded-2xl p-5 shadow-xs transition-all duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[rgba(34,34,59,0.08)]">
+        <div className="flex items-center gap-3">
+          <div className="glass-icon glass-icon-indigo w-10 h-10 rounded-xl">
+            <BookOpen className="w-5 h-5 text-[#22223B]" />
+          </div>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#4A4E69]">
               Demo Problem #{currentProblemIndex + 1}
             </span>
-            <h2 className="text-base font-bold text-slate-900">{problem.title}</h2>
+            <h2 className="text-base font-black text-[#22223B] tracking-tight">{problem.title}</h2>
           </div>
         </div>
 
         {/* Quick problem switcher tabs for hackathon demo */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 bg-[rgba(201,173,167,0.22)] p-1 rounded-xl border border-white/60 backdrop-blur-md self-start sm:self-auto">
           {PROBLEMS.map((p, idx) => (
             <button
               key={p.id}
               onClick={() => onSelectProblem(idx)}
-              className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                 currentProblemIndex === idx
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white/90 text-[#22223B] shadow-xs border border-white/80'
+                  : 'text-[#4A4E69] hover:text-[#22223B] hover:bg-white/40'
               }`}
             >
               #{idx + 1}
@@ -74,28 +74,28 @@ export default function ProblemCard({ currentProblemIndex, onSelectProblem }: Pr
       </div>
 
       {/* Main math challenge display */}
-      <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-indigo-50/60 via-slate-50 to-white p-4 rounded-xl border border-indigo-100/80">
+      <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel-subtle p-4 rounded-xl border border-white/80">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[rgba(154,140,152,0.2)] text-[#22223B] border border-white/70 backdrop-blur-xs">
               Target Question
             </span>
-            <span className="text-xs text-slate-500 font-medium">Topic: Adding & Comparing Fractions</span>
+            <span className="text-xs text-[#4A4E69] font-medium">Topic: Adding & Comparing Fractions</span>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-mono">
+          <p className="text-xl sm:text-2xl font-black text-[#22223B] tracking-tight font-mono">
             {problem.displayMath}
           </p>
-          <p className="text-xs text-slate-600 font-medium flex items-center gap-1.5 pt-1">
-            <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+          <p className="text-xs text-[#4A4E69] font-medium flex items-center gap-1.5 pt-1">
+            <HelpCircle className="w-3.5 h-3.5 text-[#4A4E69]" />
             <span>{problem.question}</span>
           </p>
         </div>
 
-        <div className="shrink-0 bg-white p-3 rounded-lg border border-slate-200 text-right">
-          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="shrink-0 bg-white/75 backdrop-blur-xs p-3 rounded-xl border border-white/80 text-right shadow-2xs">
+          <span className="block text-[10px] font-bold uppercase tracking-wider text-[#4A4E69]">
             Probe Target
           </span>
-          <span className="text-xs font-bold text-slate-800">
+          <span className="text-xs font-black text-[#22223B]">
             {problem.targetMisconception}
           </span>
         </div>

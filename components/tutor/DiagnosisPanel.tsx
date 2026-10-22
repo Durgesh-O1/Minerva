@@ -60,9 +60,9 @@ export default function DiagnosisPanel({
 
   if (!diagnosis) {
     return (
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
-        <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Brain className="w-4 h-4 text-slate-400 animate-pulse" />
+      <div className="glass-panel rounded-2xl p-4 text-center">
+        <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#4A4E69]">
+          <Brain className="w-4 h-4 text-[#22223B] animate-pulse" />
           <span>Tutor Diagnosis Engine Standing By (Send an answer to begin diagnosis)</span>
         </div>
       </div>
@@ -77,55 +77,55 @@ export default function DiagnosisPanel({
   const statusBadge = () => {
     if (isResolved) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[rgba(16,185,129,0.12)] text-[#047857] border border-[rgba(16,185,129,0.25)] backdrop-blur-xs">
+          <CheckCircle2 className="w-3.5 h-3.5 text-[#047857]" />
           Resolved
         </span>
       );
     }
     if (isConfirmed) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-          <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[rgba(225,29,72,0.12)] text-[#BE123C] border border-[rgba(225,29,72,0.25)] backdrop-blur-xs">
+          <AlertCircle className="w-3.5 h-3.5 text-[#BE123C]" />
           Gap Confirmed
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-        <Search className="w-3.5 h-3.5 text-amber-600" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[rgba(217,119,6,0.12)] text-[#B45309] border border-[rgba(217,119,6,0.25)] backdrop-blur-xs">
+        <Search className="w-3.5 h-3.5 text-[#B45309]" />
         Suspected Pattern
       </span>
     );
   };
 
   return (
-    <div className={`rounded-xl border transition-all duration-300 shadow-xs overflow-hidden ${
+    <div className={`glass-panel rounded-2xl transition-all duration-300 shadow-xs overflow-hidden ${
       isResolved
-        ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-white border-emerald-200'
+        ? 'border-[rgba(16,185,129,0.3)]'
         : isConfirmed
-        ? 'bg-gradient-to-r from-rose-50/70 via-orange-50/50 to-white border-rose-200'
-        : 'bg-gradient-to-r from-amber-50/70 via-slate-50 to-white border-amber-200'
+        ? 'border-[rgba(225,29,72,0.3)]'
+        : 'border-[rgba(217,119,6,0.3)]'
     }`}>
       {/* Header bar */}
       <div 
         onClick={() => setIsOpen(!isOpen)}
-        className="px-4 py-3 flex items-center justify-between cursor-pointer select-none border-b border-black/5 hover:bg-black/[0.02] transition"
+        className="px-4 py-3.5 flex items-center justify-between cursor-pointer select-none border-b border-[rgba(34,34,59,0.08)] hover:bg-white/30 transition"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-            <Brain className="w-4 h-4" />
+          <div className="glass-icon glass-icon-indigo w-9 h-9 rounded-xl">
+            <Brain className="w-5 h-5 text-[#22223B]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#22223B]">
                 Tutor&apos;s Live Diagnosis
               </span>
-              <span className="text-[11px] font-semibold text-slate-400">• Key Differentiator</span>
+              <span className="text-[11px] font-semibold text-[#4A4E69]">• Key Differentiator</span>
             </div>
-            <p className="text-sm font-bold text-slate-800 leading-snug">
+            <p className="text-sm font-black text-[#22223B] leading-snug">
               {diagnosis.misconception_id !== 'none' && diagnosis.misconception_id !== 'unknown' && (
-                <span className="text-indigo-600 font-extrabold mr-1.5">[{diagnosis.misconception_id}]</span>
+                <span className="text-[#22223B] font-black mr-1.5">[{diagnosis.misconception_id}]</span>
               )}
               {meta.title}
             </p>
@@ -136,7 +136,7 @@ export default function DiagnosisPanel({
           {statusBadge()}
           <button 
             type="button"
-            className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition"
+            className="glass-btn p-1.5 rounded-lg text-[#4A4E69] hover:text-[#22223B] cursor-pointer"
             aria-label={isOpen ? 'Collapse diagnosis panel' : 'Expand diagnosis panel'}
           >
             {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -146,21 +146,21 @@ export default function DiagnosisPanel({
 
       {/* Expandable Body */}
       {isOpen && (
-        <div className="p-4 space-y-3.5 text-xs text-slate-600">
+        <div className="p-4 space-y-3.5 text-xs text-[#4A4E69]">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Confidence metric */}
-            <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-2xs">
-              <span className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="glass-panel-subtle p-3.5 rounded-xl">
+              <span className="block text-[10px] font-bold text-[#4A4E69] uppercase tracking-wider">
                 Diagnosis Confidence
               </span>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-xl font-black text-slate-900">{confidencePercent}%</span>
-                <span className="text-[11px] font-medium text-slate-500">probabilistic match</span>
+                <span className="text-xl font-black text-[#22223B]">{confidencePercent}%</span>
+                <span className="text-[11px] font-medium text-[#4A4E69]">probabilistic match</span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div className="w-full bg-[rgba(34,34,59,0.08)] rounded-full h-1.5 mt-2 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    isResolved ? 'bg-emerald-500' : isConfirmed ? 'bg-rose-500' : 'bg-amber-500'
+                    isResolved ? 'bg-[#10B981]' : isConfirmed ? 'bg-[#E11D48]' : 'bg-[#D97706]'
                   }`}
                   style={{ width: `${confidencePercent}%` }}
                 />
@@ -168,13 +168,13 @@ export default function DiagnosisPanel({
             </div>
 
             {/* Hint level */}
-            <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-2xs">
-              <span className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="glass-panel-subtle p-3.5 rounded-xl">
+              <span className="block text-[10px] font-bold text-[#4A4E69] uppercase tracking-wider">
                 Socratic Hint Level
               </span>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-xl font-black text-slate-900">{hintLevel}/3</span>
-                <span className="text-[11px] font-medium text-slate-500">
+                <span className="text-xl font-black text-[#22223B]">{hintLevel}/3</span>
+                <span className="text-[11px] font-medium text-[#4A4E69]">
                   {hintLevel === 0 ? 'Diagnostic Inquiry' : hintLevel === 1 ? 'Nudge' : hintLevel === 2 ? 'Partial Hint' : 'Worked Example'}
                 </span>
               </div>
@@ -183,7 +183,7 @@ export default function DiagnosisPanel({
                   <div
                     key={step}
                     className={`h-1.5 flex-1 rounded-full transition-all ${
-                      hintLevel >= step ? 'bg-indigo-600' : 'bg-slate-200'
+                      hintLevel >= step ? 'bg-[#22223B]' : 'bg-[rgba(34,34,59,0.1)]'
                     }`}
                   />
                 ))}
@@ -191,17 +191,17 @@ export default function DiagnosisPanel({
             </div>
 
             {/* Cognitive strategy */}
-            <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-2xs">
-              <span className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="glass-panel-subtle p-3.5 rounded-xl">
+              <span className="block text-[10px] font-bold text-[#4A4E69] uppercase tracking-wider">
                 Pedagogical Strategy
               </span>
-              <div className="mt-1 flex items-center gap-1.5 text-slate-800 font-bold">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <div className="mt-1 flex items-center gap-1.5 text-[#22223B] font-bold">
+                <Sparkles className="w-4 h-4 text-[#D97706] shrink-0" />
                 <span className="truncate">
                   {isResolved ? 'Shortcut Unlocked' : isConfirmed ? 'Cognitive Conflict Probe' : 'Why Did You Choose This?'}
                 </span>
               </div>
-              <p className="mt-1 text-[11px] text-slate-500 truncate">
+              <p className="mt-1 text-[11px] text-[#4A4E69] truncate font-medium">
                 {isResolved ? 'Verified concept before trick' : 'Guide student to absurd result'}
               </p>
             </div>
@@ -209,13 +209,13 @@ export default function DiagnosisPanel({
 
           {/* Evidence quote */}
           {diagnosis.evidence && (
-            <div className="bg-white/80 p-3 rounded-lg border border-slate-200/80 flex items-start gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5 text-slate-500 font-mono text-[10px]">
+            <div className="glass-panel-subtle p-3.5 rounded-xl flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center shrink-0 mt-0.5 text-[#4A4E69] font-mono text-[10px] shadow-2xs">
                 🔍
               </div>
               <div>
-                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Observed Student Evidence:</span>
-                <p className="text-xs text-slate-700 mt-0.5 font-medium italic">
+                <span className="text-[10px] font-bold text-[#4A4E69] uppercase tracking-wider">Observed Student Evidence:</span>
+                <p className="text-xs text-[#22223B] mt-0.5 font-medium italic">
                   &ldquo;{diagnosis.evidence}&rdquo;
                 </p>
               </div>
