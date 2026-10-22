@@ -1,6 +1,6 @@
 {
   "clockOffsetDays": 0,
-  "lastUpdated": "2026-10-22T10:33:02.417Z",
+  "lastUpdated": "2026-10-22T11:26:30.217Z",
   "students": [
     {
       "id": "demo_student",
@@ -8,7 +8,7 @@
       "email": "alex.chen@school.edu",
       "avatar": "AC",
       "isDemoStudent": true,
-      "lastActive": "2026-10-22T10:33:02.417Z",
+      "lastActive": "2026-10-22T11:26:30.216Z",
       "overallMastery": 54,
       "masteryByConcept": {
         "equal_parts": 75,
@@ -23,23 +23,23 @@
       "misconceptions": [
         {
           "misconception_id": "M1",
-          "concept_id": "common denominators",
-          "status": "confirmed",
-          "confidence": 0.99,
-          "evidence": "The expression 1/2 + 1/3 = 2/5 incorrectly adds the tops and bottoms directly.",
-          "problem": "What is 1/2 + 1/3?",
-          "id": "log_1792665182417_y3xzi",
-          "timestamp": "2026-10-22T10:33:02.417Z"
+          "concept_id": "common_denominators",
+          "status": "suspected",
+          "confidence": 0.8,
+          "evidence": "Student asked for clarification; provided coin analogy.",
+          "problem": "what are prime numbers",
+          "id": "log_1792668390216_trtlj",
+          "timestamp": "2026-10-22T11:26:30.216Z"
         },
         {
           "misconception_id": "M5",
           "concept_id": "common_denominators",
           "status": "suspected",
-          "confidence": 0.9,
-          "evidence": "Student inquired why common denominators are necessary; explained unit partition principle.",
-          "problem": "What is 1/2 + 1/3?",
-          "id": "log_1792664147199_p4zjc",
-          "timestamp": "2026-10-22T10:15:47.199Z"
+          "confidence": 0.75,
+          "evidence": "Contextually responded to student input: \"how can we prevent adult sites means tell me the sites we should not visit\" without canned repetition.",
+          "problem": "how can we prevent adult sites means tell me the sites we should not visit",
+          "id": "log_1792668282899_25bd2",
+          "timestamp": "2026-10-22T11:24:42.899Z"
         }
       ],
       "revisitQueue": [

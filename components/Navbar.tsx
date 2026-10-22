@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Sparkles, GraduationCap, Users, RefreshCw, Clock } from 'lucide-react';
 import { useState } from 'react';
@@ -57,8 +58,8 @@ export default function Navbar({ onResetData, onAdvanceClock, clockOffsetDays = 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="glass-icon glass-icon-indigo w-10 h-10 rounded-xl shadow-xs">
-            <Sparkles className="w-5 h-5 text-[#22223B]" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs shrink-0 border border-white/60 bg-[#22223B]">
+            <Image src="/logo.png" alt="Minerva Logo" width={40} height={40} priority className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2">

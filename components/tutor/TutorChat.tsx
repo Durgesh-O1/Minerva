@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Diagnosis, TutorResponse } from '@/types/database';
 import ProblemCard, { PROBLEMS } from './ProblemCard';
 import DiagnosisPanel from './DiagnosisPanel';
@@ -349,6 +350,9 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         <div className="px-4 py-3 bg-[rgba(242,233,228,0.7)] backdrop-blur-md border-b border-[rgba(34,34,59,0.08)] flex items-center justify-between text-xs shrink-0">
           <div className="flex items-center gap-2 text-[#4A4E69] font-medium">
             <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse shadow-xs" />
+            <div className="w-5 h-5 rounded-md overflow-hidden shrink-0 border border-white/60 shadow-xs bg-[#22223B]">
+              <Image src="/logo.png" alt="Minerva Logo" width={20} height={20} className="w-full h-full object-cover" />
+            </div>
             <span className="font-extrabold text-[#22223B]">Minerva AI Tutor</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[rgba(16,185,129,0.12)] text-[#047857] border border-white/70 backdrop-blur-xs">
               Live AI Active
@@ -414,13 +418,17 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
               >
                 {/* Avatar */}
                 <div
-                  className={`glass-icon w-8 h-8 rounded-xl shrink-0 text-xs ${
+                  className={`w-8 h-8 rounded-xl shrink-0 overflow-hidden flex items-center justify-center ${
                     isUser
-                      ? 'glass-icon-indigo'
-                      : 'glass-icon-grape'
+                      ? 'glass-icon glass-icon-indigo text-xs'
+                      : 'border border-white/60 shadow-xs bg-[#22223B]'
                   }`}
                 >
-                  {isUser ? <User className="w-4 h-4 text-[#22223B]" /> : <Bot className="w-4 h-4 text-[#22223B]" />}
+                  {isUser ? (
+                    <User className="w-4 h-4 text-[#22223B]" />
+                  ) : (
+                    <Image src="/logo.png" alt="Minerva AI" width={32} height={32} className="w-full h-full object-cover" />
+                  )}
                 </div>
 
                 {/* Message bubble */}
@@ -507,8 +515,8 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
 
           {loading && (
             <div className="flex gap-3 max-w-[80%] mr-auto items-center">
-              <div className="glass-icon glass-icon-grape w-8 h-8 rounded-xl">
-                <Bot className="w-4 h-4 text-[#22223B]" />
+              <div className="w-8 h-8 rounded-xl shrink-0 overflow-hidden border border-white/60 shadow-xs bg-[#22223B] flex items-center justify-center">
+                <Image src="/logo.png" alt="Minerva AI" width={32} height={32} className="w-full h-full object-cover" />
               </div>
               <div className="glass-panel-subtle rounded-2xl rounded-tl-xs p-4 flex items-center gap-2 text-xs font-medium text-[#4A4E69]">
                 <span className="w-2 h-2 rounded-full bg-[#22223B] animate-bounce" />
