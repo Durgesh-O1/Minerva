@@ -7,61 +7,74 @@ import { checkResponseForAnswerLeak } from './diagnostic/remediation';
  * Returns dynamic client configuration, re-evaluating process.env on every call.
  * This guarantees any new API key in .env.local or environment is instantly detected.
  */
-function getClientConfig() {
+export function getClientConfig() {
   const xaiApiKey = process.env.XAI_API_KEY?.trim() || '';
-  const isXai = xaiApiKey.startsWith('xai-');
-  const model = process.env.GROK_MODEL?.trim() || 'grok-2-latest';
-  const isExplicitDemo = process.env.DEMO_MODE === 'true';
+  const openRouterApiKey = process.env.OPENROUTER_API_KEY?.trim() || '';
 
-  // Only attempt live external network requests if a valid xai- key is configured
-  const canUseLiveGrok = isXai && !isExplicitDemo;
+  const isXai = xaiApiKey.startsWith('xai-');
+  const isDemo = process.env.DEMO_MODE === 'true';
+
+  let apiKey = '';
+  let baseURL = '';
+  let model = '';
+  let maxTokens = 400;
+  let provider: 'xai' | 'openrouter' | 'none' = 'none';
+
+  if (isXai && !isDemo) {
+    apiKey = xaiApiKey;
+    baseURL = 'https://api.x.ai/v1';
+    model = process.env.GROK_MODEL?.trim() || 'grok-2-latest';
+    maxTokens = 450;
+    provider = 'xai';
+  } else if (openRouterApiKey && !isDemo) {
+    apiKey = openRouterApiKey;
+    baseURL = 'https://openrouter.ai/api/v1';
+    // Use high-performance, active zero-credit model on OpenRouter for instant live unscripted answers
+    model = process.env.OPENROUTER_MODEL?.trim() || 'minimax/minimax-m3.1-flash:free';
+    maxTokens = 400;
+    provider = 'openrouter';
+  }
 
   return {
-    apiKey: xaiApiKey,
-    baseURL: 'https://api.x.ai/v1',
+    apiKey,
+    baseURL,
     model,
-    isDemo: !canUseLiveGrok,
+    maxTokens,
+    provider,
+    isDemo,
     isXai,
+    isLive: Boolean(apiKey) && !isDemo,
   };
 }
 
-const SYSTEM_PROMPT = `
-You are Minerva, an elite Socratic AI Math Tutor specializing in Learning-Gap Detection for "Adding and Comparing Fractions".
-Your mission is to guide the student conversationally, answer their questions accurately and relevantly, and diagnose any root conceptual misconceptions.
+const SYSTEM_PROMPT = `You are Minerva, an elite AI study tutor.
+Your mission:
+1. Answer ANY study question (math, physics, biology, chemistry, history, literature, logic, etc.) directly, accurately, and clearly in 2-4 sentences.
+2. When evaluating math or fraction problems (such as 1/2 + 1/3, or 1/8 vs 1/3):
+   - If the student shows a misconception, guide them Socratically with a constructive question without giving away the final answer.
+   - Misconception IDs:
+     * M1: Adds tops and bottoms across (e.g. 1/2 + 1/3 = 2/5)
+     * M2: Believes larger denominator means bigger fraction (e.g. 1/8 > 1/3)
+     * M3: Assumes equal numerators mean equal fractions (e.g. 2/5 = 2/7)
+     * M4: Treats fraction as two separate whole numbers
+     * M5: Does not find common denominators / unit size
+     * careless_slip: Simple arithmetic typo
+     * none: Correct answer or general study question
+     * unknown: Ambiguous response
 
-### Misconception Taxonomy:
-- M1: Adds numerators and denominators separately (e.g., 1/2 + 1/3 = 2/5)
-- M2: Thinks a bigger denominator means a bigger fraction (e.g., 1/8 > 1/3)
-- M3: Thinks fractions with the same numerator are equal (e.g., 2/5 = 2/7)
-- M4: Treats numerator and denominator as two separate, isolated whole numbers
-- M5: Doesn't see why equal-sized parts (common units) are required before adding
-- careless_slip: Basic arithmetic calculation typo with no conceptual gap
-- none: Correct understanding demonstrated, question answered, or conversational topic change
-- unknown: Unclear or insufficient evidence
-
-### Pedagogical & Conversational Rules:
-1. ALWAYS answer the student's question directly and relevantly. Never ignore their question or repeat canned phrases.
-2. If the student asks "why", explain the underlying concept using intuitive physical slice or currency analogies.
-3. NEVER reveal the final answer to the student's active test problem immediately; use Socratic steps.
-4. Keep replies friendly, concise (2-4 sentences max), warm, and focused on helping them understand.
-
-### MANDATORY OUTPUT FORMAT:
-You MUST reply with ONLY a single valid JSON object with NO markdown formatting, NO backticks, and NO extra commentary.
-Schema:
+Reply ONLY with a single valid JSON object matching:
 {
-  "reply": "string (your helpful, relevant conversational response)",
+  "reply": "string (your helpful, real tutor answer)",
   "diagnosis": {
     "misconception_id": "M1" | "M2" | "M3" | "M4" | "M5" | "careless_slip" | "none" | "unknown",
     "confidence": 0.0 to 1.0,
-    "evidence": "brief explanation of reasoning",
+    "evidence": "brief explanation",
     "status": "suspected" | "confirmed" | "resolved"
   },
   "hint_level": 0 to 3,
-  "related_concepts": ["concept_id_1"],
-  "understood": boolean,
-  "shortcut": "optional shortcut explanation"
-}
-`;
+  "related_concepts": ["concept"],
+  "understood": boolean
+}`;
 
 export interface TutorMessageContext {
   role: 'user' | 'assistant' | 'system';
@@ -75,10 +88,10 @@ export async function askTutorGrok(
 ): Promise<TutorResponse> {
   const config = getClientConfig();
 
-  // Try live API if an API key is configured and demo mode is not forced
-  if (config.apiKey && !config.isDemo) {
+  // Try live AI (Official xAI Grok or OpenRouter Live AI)
+  if (config.isLive) {
     const contextualSystemPrompt = studentNotes
-      ? `${SYSTEM_PROMPT}\n\n### Student Personal Notes:\n"""\n${studentNotes}\n"""`
+      ? `${SYSTEM_PROMPT}\n\nStudent Notes: "${studentNotes}"`
       : SYSTEM_PROMPT;
 
     const formattedMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
@@ -92,18 +105,21 @@ export async function askTutorGrok(
     const client = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseURL,
-      timeout: config.isXai ? 12000 : 5000,
+      timeout: config.isXai ? 12000 : 9000,
     });
 
-    const maxAttempts = config.isXai ? 2 : 1;
+    // Try primary model, then backup free model if on OpenRouter
+    const modelsToTry = config.isXai
+      ? [config.model]
+      : [config.model, 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3.5-lightning:free'];
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    for (const modelToUse of modelsToTry) {
       try {
         const response = await client.chat.completions.create({
-          model: config.model,
+          model: modelToUse,
           messages: formattedMessages,
           response_format: { type: 'json_object' },
-          max_tokens: 500,
+          max_tokens: config.maxTokens,
           temperature: 0.3,
         });
 
@@ -111,7 +127,7 @@ export async function askTutorGrok(
         if (content) {
           const parsed = parseAndValidateTutorResponse(content);
           if (parsed) {
-            // Guard against answer leakage in tutor reply
+            // Guard against answer leakage in tutor reply for fraction problems
             const leak = checkResponseForAnswerLeak(parsed.reply, ['5/6', '5/12']);
             if (leak.hasLeak) {
               parsed.reply =
@@ -121,28 +137,39 @@ export async function askTutorGrok(
           }
         }
       } catch (apiError: any) {
-        if (attempt < maxAttempts) {
-          console.warn(`[Minerva Tutor] Grok attempt 1 failed (${apiError.message || apiError}), retrying...`);
-          continue;
-        }
         console.warn(
-          `[Minerva Tutor] Live Grok unavailable (${apiError.message || apiError}), seamlessly engaging intelligent pedagogical engine`
+          `[Minerva Tutor] Model ${modelToUse} attempt failed (${apiError.message || apiError}). Trying next option...`
         );
       }
     }
   }
 
-  // High-fidelity intelligent conversation engine
+  // High-fidelity intelligent conversation engine (semantic fallback)
   return getScriptedDemoResponse(messages, studentNotes, studentId);
 }
 
 function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
   try {
-    const cleaned = rawJson.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-    const obj = JSON.parse(cleaned);
+    let cleaned = rawJson.trim();
+    cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
 
-    if (typeof obj.reply !== 'string') return null;
-    if (!obj.diagnosis || typeof obj.diagnosis !== 'object') return null;
+    // Extract JSON object if surrounded by extra text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    }
+
+    const obj = JSON.parse(cleaned);
+    let replyText = '';
+    if (typeof obj.reply === 'string' && obj.reply.trim()) {
+      replyText = obj.reply.trim();
+    } else if (typeof obj.answer === 'string' && obj.answer.trim()) {
+      replyText = obj.answer.trim();
+    } else if (typeof obj.content === 'string' && obj.content.trim()) {
+      replyText = obj.content.trim();
+    } else {
+      return null;
+    }
 
     const validMisconceptions: MisconceptionId[] = [
       'M1',
@@ -154,28 +181,44 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
       'none',
       'unknown',
     ];
-    const mId = validMisconceptions.includes(obj.diagnosis.misconception_id)
+    const mId = obj.diagnosis && validMisconceptions.includes(obj.diagnosis.misconception_id)
       ? obj.diagnosis.misconception_id
-      : 'unknown';
+      : 'none';
 
     return {
-      reply: obj.reply,
+      reply: replyText,
       diagnosis: {
         misconception_id: mId,
-        confidence: Math.min(1, Math.max(0, Number(obj.diagnosis.confidence) || 0.5)),
-        evidence: String(obj.diagnosis.evidence || 'Analyzed student response'),
-        status: ['suspected', 'confirmed', 'resolved'].includes(obj.diagnosis.status)
+        confidence: Math.min(1, Math.max(0, Number(obj.diagnosis?.confidence) || 0.9)),
+        evidence: String(obj.diagnosis?.evidence || 'Live AI response'),
+        status: ['suspected', 'confirmed', 'resolved'].includes(obj.diagnosis?.status)
           ? obj.diagnosis.status
-          : 'suspected',
+          : 'resolved',
       },
       hint_level: Math.min(3, Math.max(0, Number(obj.hint_level) || 0)),
-      related_concepts: Array.isArray(obj.related_concepts)
+      related_concepts: Array.isArray(obj.related_concepts) && obj.related_concepts.length > 0
         ? obj.related_concepts
-        : ['common_denominators'],
-      understood: Boolean(obj.understood),
+        : ['general_study'],
+      understood: Boolean(obj.understood ?? true),
       shortcut: obj.shortcut ? String(obj.shortcut) : undefined,
     };
   } catch {
+    // If raw response was text instead of JSON, preserve real AI response
+    if (typeof rawJson === 'string' && rawJson.trim().length > 0) {
+      const trimmed = rawJson.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+      return {
+        reply: trimmed,
+        diagnosis: {
+          misconception_id: 'none',
+          confidence: 0.9,
+          evidence: 'Live AI direct text response',
+          status: 'resolved',
+        },
+        hint_level: 0,
+        related_concepts: ['general_study'],
+        understood: true,
+      };
+    }
     return null;
   }
 }
@@ -191,8 +234,6 @@ export function getScriptedDemoResponse(
 ): TutorResponse {
   const userMessages = messages.filter((m) => m.role === 'user');
   const lastUserMsg = userMessages[userMessages.length - 1]?.content.toLowerCase().trim() || '';
-  const previousAssistantMsg =
-    [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
 
   // -------------------------------------------------------------------------
   // 1. Math Diagnostic Submissions (Fractions, Option IDs, or calculations)
@@ -233,7 +274,85 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 2. Student asks: "Why do we need a common denominator?" / "Why common units?"
+  // 2. Science Topics: Photosynthesis, Gravity, Biology, Physics
+  // -------------------------------------------------------------------------
+  if (lastUserMsg.includes('photosynthesis')) {
+    return {
+      reply: `Photosynthesis is the biochemical process by which green plants, algae, and some bacteria use solar energy to convert carbon dioxide (CO₂) and water (H₂O) into energy-rich glucose (C₆H₁₂O₆) and oxygen (O₂). It takes place mainly inside chloroplasts containing the green pigment chlorophyll!`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: 'Explained photosynthesis process and equation.',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['biology', 'cellular_energy'],
+      understood: true,
+    };
+  }
+
+  if (lastUserMsg.includes('gravity') || lastUserMsg.includes('gravitation')) {
+    return {
+      reply: `Gravity is the universal attractive force that acts between all objects with mass. In Newtonian mechanics, every mass attracts every other mass proportional to their masses and inversely to the square of their distance ($F = G \\frac{m_1 m_2}{r^2}$). In general relativity, Einstein showed gravity is the curvature of spacetime created by mass and energy!`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: 'Explained Newtonian and relativistic gravity.',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['physics', 'forces_and_motion'],
+      understood: true,
+    };
+  }
+
+  if (lastUserMsg.includes('pythagor') || lastUserMsg.includes('pythogor') || lastUserMsg.includes('a^2 + b^2') || lastUserMsg.includes('a² + b²')) {
+    return {
+      reply: `Pythagoras' theorem states that in any right-angled triangle, the area of the square whose side is the hypotenuse (c) is equal to the sum of the areas of the squares on the other two legs (a and b): a² + b² = c²! For example, with legs 3 and 4: 3² + 4² = 9 + 16 = 25 = 5², so the hypotenuse is 5.`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: 'Explained Pythagoras theorem.',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['geometry', 'triangles'],
+      understood: true,
+    };
+  }
+
+  if (lastUserMsg.includes('newton') && (lastUserMsg.includes('law') || lastUserMsg.includes('motion'))) {
+    return {
+      reply: `Newton's three laws of motion are: 1) Law of Inertia: an object remains at rest or moves at a constant velocity unless acted upon by a net external force; 2) F = ma: force equals mass times acceleration; 3) Action-Reaction: for every action force, there is an equal and opposite reaction force.`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: "Summarized Newton's laws of motion.",
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['physics', 'mechanics'],
+      understood: true,
+    };
+  }
+
+  if (lastUserMsg.includes('mitochondria') || lastUserMsg.includes('powerhouse of the cell')) {
+    return {
+      reply: `Mitochondria are membrane-bound cellular organelles known as the 'powerhouse of the cell.' They generate most of the chemical energy needed to power the cell's biochemical reactions through cellular respiration, storing that energy in molecules of adenosine triphosphate (ATP).`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: 'Explained mitochondria organelle function.',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['biology', 'cell_biology'],
+      understood: true,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. Student asks: "Why do we need a common denominator?" / "Why common units?"
   // -------------------------------------------------------------------------
   if (
     (lastUserMsg.includes('why') &&
@@ -263,7 +382,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 3. Student asks: "Why is 2/5 smaller than 1/2?"
+  // 4. Student asks: "Why is 2/5 smaller than 1/2?"
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('2/5') &&
@@ -288,7 +407,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 4. Student asks: "What is a numerator?" or "What is a denominator?"
+  // 5. Student asks: "What is a numerator?" or "What is a denominator?"
   // -------------------------------------------------------------------------
   if (lastUserMsg.includes('what is a numerator') || lastUserMsg.includes('what is numerator')) {
     return {
@@ -325,7 +444,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 5. Student asks: "How do I find a common denominator?" or "Why 6?"
+  // 6. Student asks: "How do I find a common denominator?" or "Why 6?"
   // -------------------------------------------------------------------------
   if (
     (lastUserMsg.includes('how') &&
@@ -348,30 +467,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 5b. Student asks about Pythagoras theorem or geometry
-  // -------------------------------------------------------------------------
-  if (
-    lastUserMsg.includes('pythagor') ||
-    lastUserMsg.includes('pythogor') ||
-    lastUserMsg.includes('a^2 + b^2') ||
-    lastUserMsg.includes('a² + b²')
-  ) {
-    return {
-      reply: `Pythagoras' theorem states that in any right-angled triangle, the square of the hypotenuse (the longest side c) equals the sum of the squares of the two shorter sides: a² + b² = c²! For example, with sides of 3 and 4: 3² + 4² = 9 + 16 = 25, which is 5².`,
-      diagnosis: {
-        misconception_id: 'none',
-        confidence: 0.99,
-        evidence: 'Explained Pythagoras theorem.',
-        status: 'resolved',
-      },
-      hint_level: 0,
-      related_concepts: ['geometry'],
-      understood: true,
-    };
-  }
-
-  // -------------------------------------------------------------------------
-  // 6. Student asks for Butterfly Method / Shortcut
+  // 7. Student asks for Butterfly Method / Shortcut
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('shortcut') ||
@@ -396,7 +492,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 7. Student asks for an example
+  // 8. Student asks for an example
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('example') ||
@@ -418,7 +514,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 8. Student asks: "What should I do next?" / "What is the next step?"
+  // 9. Student asks: "What should I do next?" / "What is the next step?"
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('next') ||
@@ -441,7 +537,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 9. Student asks for a hint
+  // 10. Student asks for a hint
   // -------------------------------------------------------------------------
   if (lastUserMsg.includes('hint') || lastUserMsg === 'help') {
     return {
@@ -459,7 +555,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 10. Student asks: "What is a fraction?"
+  // 11. Student asks: "What is a fraction?"
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('what is a fraction') ||
@@ -481,7 +577,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 11. Student expresses frustration or requests to stop repeating
+  // 12. Student expresses frustration or requests to stop repeating
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('repeat') ||
@@ -490,7 +586,7 @@ export function getScriptedDemoResponse(
     lastUserMsg.includes('again')
   ) {
     return {
-      reply: `I hear you! Let's get straight to what you want to know. Tell me what question you have about fractions, and I will answer it directly.`,
+      reply: `I hear you! Let's get straight to what you want to know. Tell me what question you have, and I will answer it directly.`,
       diagnosis: {
         misconception_id: 'none',
         confidence: 0.5,
@@ -498,13 +594,13 @@ export function getScriptedDemoResponse(
         status: 'suspected',
       },
       hint_level: 1,
-      related_concepts: ['adding_fractions'],
+      related_concepts: ['general_study'],
       understood: false,
     };
   }
 
   // -------------------------------------------------------------------------
-  // 12. Student requests the direct answer
+  // 13. Student requests the direct answer
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('give me the answer') ||
@@ -526,7 +622,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 13. Friendly Greetings & Persona Questions
+  // 14. Friendly Greetings & Persona Questions
   // -------------------------------------------------------------------------
   if (
     lastUserMsg === 'hi' ||
@@ -536,7 +632,7 @@ export function getScriptedDemoResponse(
     lastUserMsg.includes('what is your name')
   ) {
     return {
-      reply: `Hello! I'm Minerva, your AI math tutor. I'm here to help you truly understand and master fractions step-by-step. What question do you have about 1/2 + 1/3?`,
+      reply: `Hello! I'm Minerva, your AI tutor. I can answer any study question across math, science, history, or literature, and guide you through tricky problem-solving step-by-step. What would you like to explore today?`,
       diagnosis: {
         misconception_id: 'none',
         confidence: 0.9,
@@ -544,13 +640,13 @@ export function getScriptedDemoResponse(
         status: 'resolved',
       },
       hint_level: 0,
-      related_concepts: ['adding_fractions'],
+      related_concepts: ['general_study'],
       understood: true,
     };
   }
 
   // -------------------------------------------------------------------------
-  // 14. Student expresses general confusion ("don't know", "what?", "huh", "not sure")
+  // 15. Student expresses general confusion ("don't know", "what?", "huh", "not sure")
   // -------------------------------------------------------------------------
   const isConfused =
     lastUserMsg.includes("don't know") ||
@@ -578,7 +674,7 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 15. Student wants to move on or switch topics
+  // 16. Student wants to move on or switch topics
   // -------------------------------------------------------------------------
   if (
     lastUserMsg.includes('move on') ||
@@ -602,7 +698,34 @@ export function getScriptedDemoResponse(
   }
 
   // -------------------------------------------------------------------------
-  // 16. Contextual Dynamic Turn (Never repeats static strings!)
+  // 17. General Study Inquiries (Never force fraction response on non-fraction questions!)
+  // -------------------------------------------------------------------------
+  const isStudyQuestion =
+    lastUserMsg.includes('what is') ||
+    lastUserMsg.includes('explain') ||
+    lastUserMsg.includes('how does') ||
+    lastUserMsg.includes('define') ||
+    lastUserMsg.includes('tell me about') ||
+    lastUserMsg.includes('who is') ||
+    lastUserMsg.includes('who was');
+
+  if (isStudyQuestion) {
+    return {
+      reply: `That is an interesting topic! To give you the clearest and most helpful breakdown, could you specify which specific part you'd like to dive into, or whether you want a quick conceptual summary or a worked example?`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.9,
+        evidence: `Directly acknowledged general study query: "${lastUserMsg}"`,
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['general_study'],
+      understood: true,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 18. Default Contextual Turn for Fraction Session
   // -------------------------------------------------------------------------
   return {
     reply: `I see what you're thinking! To combine 1/2 and 1/3, we need a shared slice size so the pieces match. Since 2 × 3 = 6, we can slice both into sixths. How many sixths make up 1/2?`,

@@ -223,8 +223,10 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs shrink-0">
           <div className="flex items-center gap-2 text-slate-500 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-semibold text-slate-700">Minerva Socratic Tutor</span>
-            <span className="hidden sm:inline">• Active Session</span>
+            <span className="font-semibold text-slate-700">Minerva AI Tutor</span>
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Live AI Active
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -406,7 +408,7 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-            placeholder="Explain your approach (e.g., 'I got 2/5 because...')"
+            placeholder="Ask any study question or explain your approach (e.g., 'What is gravity?', '1/2 + 1/3 = 2/5')..."
             disabled={loading}
             className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
           />

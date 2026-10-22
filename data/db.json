@@ -1,6 +1,6 @@
 {
   "clockOffsetDays": 0,
-  "lastUpdated": "2026-10-22T09:23:10.716Z",
+  "lastUpdated": "2026-10-22T10:33:02.417Z",
   "students": [
     {
       "id": "demo_student",
@@ -8,7 +8,7 @@
       "email": "alex.chen@school.edu",
       "avatar": "AC",
       "isDemoStudent": true,
-      "lastActive": "2026-10-22T09:23:10.715Z",
+      "lastActive": "2026-10-22T10:33:02.417Z",
       "overallMastery": 54,
       "masteryByConcept": {
         "equal_parts": 75,
@@ -23,23 +23,23 @@
       "misconceptions": [
         {
           "misconception_id": "M1",
-          "concept_id": "common_denominators",
-          "status": "suspected",
-          "confidence": 0.78,
-          "evidence": "Guiding through unit conversion steps.",
+          "concept_id": "common denominators",
+          "status": "confirmed",
+          "confidence": 0.99,
+          "evidence": "The expression 1/2 + 1/3 = 2/5 incorrectly adds the tops and bottoms directly.",
           "problem": "What is 1/2 + 1/3?",
-          "id": "log_1792660990715_zxwwq",
-          "timestamp": "2026-10-22T09:23:10.715Z"
+          "id": "log_1792665182417_y3xzi",
+          "timestamp": "2026-10-22T10:33:02.417Z"
         },
         {
-          "id": "log_demo_2",
           "misconception_id": "M5",
+          "concept_id": "common_denominators",
           "status": "suspected",
-          "confidence": 0.74,
-          "evidence": "Struggled to see why slices need to be the same size before counting pieces.",
-          "timestamp": "2026-10-22T08:14:02.449Z",
-          "problem": "Why do we need a common denominator before adding?",
-          "concept_id": "common_denominators"
+          "confidence": 0.9,
+          "evidence": "Student inquired why common denominators are necessary; explained unit partition principle.",
+          "problem": "What is 1/2 + 1/3?",
+          "id": "log_1792664147199_p4zjc",
+          "timestamp": "2026-10-22T10:15:47.199Z"
         }
       ],
       "revisitQueue": [
