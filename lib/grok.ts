@@ -24,14 +24,14 @@ export function getClientConfig() {
     apiKey = xaiApiKey;
     baseURL = 'https://api.x.ai/v1';
     model = process.env.GROK_MODEL?.trim() || 'grok-2-latest';
-    maxTokens = 450;
+    maxTokens = 600;
     provider = 'xai';
   } else if (openRouterApiKey && !isDemo) {
     apiKey = openRouterApiKey;
     baseURL = 'https://openrouter.ai/api/v1';
     // Use high-performance, active zero-credit model on OpenRouter for instant live unscripted answers
     model = process.env.OPENROUTER_MODEL?.trim() || 'minimax/minimax-m3.1-flash:free';
-    maxTokens = 400;
+    maxTokens = 600;
     provider = 'openrouter';
   }
 
@@ -68,13 +68,14 @@ Reply ONLY with a single valid JSON object matching:
   "diagnosis": {
     "misconception_id": "M1" | "M2" | "M3" | "M4" | "M5" | "careless_slip" | "none" | "unknown",
     "confidence": 0.0 to 1.0,
-    "evidence": "brief explanation",
+    "evidence": "brief explanation (under 10 words)",
     "status": "suspected" | "confirmed" | "resolved"
   },
   "hint_level": 0 to 3,
-  "related_concepts": ["concept"],
+  "related_concepts": ["concept1", "concept2"],
   "understood": boolean
-}`;
+}
+Always ensure the JSON is fully closed and valid.`;
 
 export interface TutorMessageContext {
   role: 'user' | 'assistant' | 'system';
@@ -148,18 +149,36 @@ export async function askTutorGrok(
   return getScriptedDemoResponse(messages, studentNotes, studentId);
 }
 
-function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
-  try {
-    let cleaned = rawJson.trim();
-    cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-
-    // Extract JSON object if surrounded by extra text
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      cleaned = jsonMatch[0];
+function extractReplyFromTruncatedJson(str: string): string | null {
+  // First attempt: clean match of "reply": "..."
+  const match = str.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (match && match[1]) {
+    try {
+      return JSON.parse(`"${match[1]}"`);
+    } catch {
+      return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
     }
+  }
+  // Second attempt: reply string is present but may have unclosed trailing quote/truncation
+  const unclosed = str.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
+  if (unclosed && unclosed[1]) {
+    return unclosed[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+  }
+  return null;
+}
 
-    const obj = JSON.parse(cleaned);
+function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
+  if (!rawJson || typeof rawJson !== 'string') return null;
+
+  let cleaned = rawJson.trim();
+  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+
+  // 1. Try full standard JSON parse
+  try {
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    const toParse = jsonMatch ? jsonMatch[0] : cleaned;
+    const obj = JSON.parse(toParse);
+
     let replyText = '';
     if (typeof obj.reply === 'string' && obj.reply.trim()) {
       replyText = obj.reply.trim();
@@ -167,60 +186,84 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
       replyText = obj.answer.trim();
     } else if (typeof obj.content === 'string' && obj.content.trim()) {
       replyText = obj.content.trim();
-    } else {
-      return null;
     }
 
-    const validMisconceptions: MisconceptionId[] = [
-      'M1',
-      'M2',
-      'M3',
-      'M4',
-      'M5',
-      'careless_slip',
-      'none',
-      'unknown',
-    ];
-    const mId = obj.diagnosis && validMisconceptions.includes(obj.diagnosis.misconception_id)
-      ? obj.diagnosis.misconception_id
-      : 'none';
+    if (replyText) {
+      const validMisconceptions: MisconceptionId[] = [
+        'M1',
+        'M2',
+        'M3',
+        'M4',
+        'M5',
+        'careless_slip',
+        'none',
+        'unknown',
+      ];
+      const mId = obj.diagnosis && validMisconceptions.includes(obj.diagnosis.misconception_id)
+        ? obj.diagnosis.misconception_id
+        : 'none';
 
-    return {
-      reply: replyText,
-      diagnosis: {
-        misconception_id: mId,
-        confidence: Math.min(1, Math.max(0, Number(obj.diagnosis?.confidence) || 0.9)),
-        evidence: String(obj.diagnosis?.evidence || 'Live AI response'),
-        status: ['suspected', 'confirmed', 'resolved'].includes(obj.diagnosis?.status)
-          ? obj.diagnosis.status
-          : 'resolved',
-      },
-      hint_level: Math.min(3, Math.max(0, Number(obj.hint_level) || 0)),
-      related_concepts: Array.isArray(obj.related_concepts) && obj.related_concepts.length > 0
-        ? obj.related_concepts
-        : ['general_study'],
-      understood: Boolean(obj.understood ?? true),
-      shortcut: obj.shortcut ? String(obj.shortcut) : undefined,
-    };
-  } catch {
-    // If raw response was text instead of JSON, preserve real AI response
-    if (typeof rawJson === 'string' && rawJson.trim().length > 0) {
-      const trimmed = rawJson.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
       return {
-        reply: trimmed,
+        reply: replyText,
         diagnosis: {
-          misconception_id: 'none',
-          confidence: 0.9,
-          evidence: 'Live AI direct text response',
-          status: 'resolved',
+          misconception_id: mId,
+          confidence: Math.min(1, Math.max(0, Number(obj.diagnosis?.confidence) || 0.9)),
+          evidence: String(obj.diagnosis?.evidence || 'Live AI response'),
+          status: ['suspected', 'confirmed', 'resolved'].includes(obj.diagnosis?.status)
+            ? obj.diagnosis.status
+            : 'resolved',
         },
-        hint_level: 0,
-        related_concepts: ['general_study'],
-        understood: true,
+        hint_level: Math.min(3, Math.max(0, Number(obj.hint_level) || 0)),
+        related_concepts: Array.isArray(obj.related_concepts) && obj.related_concepts.length > 0
+          ? obj.related_concepts.slice(0, 3)
+          : ['general_study'],
+        understood: Boolean(obj.understood ?? true),
+        shortcut: obj.shortcut ? String(obj.shortcut) : undefined,
       };
     }
-    return null;
+  } catch {
+    // Full JSON parse failed (likely cut off at the tail) - proceed to field extraction
   }
+
+  // 2. If full JSON parsing failed because it truncated at the end (e.g. in related_concepts),
+  // extract the completed "reply" field rather than dumping raw JSON!
+  const extractedReply = extractReplyFromTruncatedJson(cleaned);
+  if (extractedReply && extractedReply.trim().length > 0) {
+    const mMatch = cleaned.match(/"misconception_id"\s*:\s*"([A-Za-z0-9_]+)"/);
+    const validMIds = ['M1', 'M2', 'M3', 'M4', 'M5', 'careless_slip', 'none', 'unknown'];
+    const extractedMId = mMatch && validMIds.includes(mMatch[1]) ? (mMatch[1] as MisconceptionId) : 'none';
+
+    return {
+      reply: extractedReply.trim(),
+      diagnosis: {
+        misconception_id: extractedMId,
+        confidence: 0.95,
+        evidence: 'Live AI structured response',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['general_study'],
+      understood: true,
+    };
+  }
+
+  // 3. If rawJson was plain conversational text (didn't contain {"reply": ...})
+  if (!cleaned.startsWith('{') && cleaned.length > 0) {
+    return {
+      reply: cleaned,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.9,
+        evidence: 'Live AI direct text response',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['general_study'],
+      understood: true,
+    };
+  }
+
+  return null;
 }
 
 // ============================================================================

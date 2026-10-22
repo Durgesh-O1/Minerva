@@ -23,6 +23,20 @@ interface TutorChatProps {
   onConceptSelect?: (conceptId: string) => void;
 }
 
+function cleanContent(content: string): string {
+  if (typeof content === 'string' && content.trim().startsWith('{') && content.includes('"reply"')) {
+    const match = content.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (match && match[1]) {
+      try {
+        return JSON.parse(`"${match[1]}"`);
+      } catch {
+        return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+      }
+    }
+  }
+  return content;
+}
+
 export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }: TutorChatProps) {
   const [problemIndex, setProblemIndex] = useState(0);
   const [input, setInput] = useState('');
@@ -141,10 +155,23 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
       if (!res.ok) throw new Error('Tutor response failed');
       const data: TutorResponse = await res.json();
 
+      // Client-side guard: if reply contains raw JSON string, extract clean text
+      let cleanReply = data.reply;
+      if (typeof cleanReply === 'string' && cleanReply.trim().startsWith('{') && cleanReply.includes('"reply"')) {
+        const match = cleanReply.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (match && match[1]) {
+          try {
+            cleanReply = JSON.parse(`"${match[1]}"`);
+          } catch {
+            cleanReply = match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+          }
+        }
+      }
+
       const tutorMessage: ChatMessage = {
         id: `tutor_${Date.now()}`,
         role: 'assistant',
-        content: data.reply,
+        content: cleanReply,
         diagnosis: data.diagnosis,
         hintLevel: data.hint_level,
         understood: data.understood,
@@ -308,7 +335,7 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
                         : 'bg-slate-100 text-slate-800 rounded-tl-xs border border-slate-200/60 shadow-2xs'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    <div className="whitespace-pre-wrap">{cleanContent(msg.content)}</div>
 
                     {!isUser && msg.content.includes('absurd') && (
                       <div className="mt-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center gap-2">
