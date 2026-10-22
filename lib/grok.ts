@@ -9,31 +9,18 @@ import { checkResponseForAnswerLeak } from './diagnostic/remediation';
  */
 function getClientConfig() {
   const xaiApiKey = process.env.XAI_API_KEY?.trim() || '';
-  const openRouterApiKey = process.env.OPENROUTER_API_KEY?.trim() || '';
+  const isXai = xaiApiKey.startsWith('xai-');
+  const model = process.env.GROK_MODEL?.trim() || 'grok-2-latest';
+  const isExplicitDemo = process.env.DEMO_MODE === 'true';
 
-  const isXai = Boolean(xaiApiKey);
-  const effectiveApiKey = xaiApiKey || openRouterApiKey;
-  const baseURL = isXai ? 'https://api.x.ai/v1' : 'https://openrouter.ai/api/v1';
-
-  let model = process.env.GROK_MODEL?.trim();
-  if (isXai) {
-    if (!model || model.includes('/')) {
-      model = 'grok-2-latest';
-    }
-  } else {
-    // OpenRouter models require provider prefix (e.g. minimax/minimax-m3.1-flash:free)
-    if (!model || !model.includes('/')) {
-      model = 'minimax/minimax-m3.1-flash:free';
-    }
-  }
-
-  const isDemo = process.env.DEMO_MODE === 'true';
+  // Only attempt live external network requests if a valid xai- key is configured
+  const canUseLiveGrok = isXai && !isExplicitDemo;
 
   return {
-    apiKey: effectiveApiKey,
-    baseURL,
+    apiKey: xaiApiKey,
+    baseURL: 'https://api.x.ai/v1',
     model,
-    isDemo,
+    isDemo: !canUseLiveGrok,
     isXai,
   };
 }
