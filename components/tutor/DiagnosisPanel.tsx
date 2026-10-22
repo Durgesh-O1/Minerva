@@ -207,6 +207,37 @@ export default function DiagnosisPanel({
             </div>
           </div>
 
+          {/* Weak Concept & Micro-Concepts */}
+          {(diagnosis.weak_concept || (diagnosis.micro_concepts && diagnosis.micro_concepts.length > 0)) && (
+            <div className="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100/90 flex flex-wrap items-center gap-2">
+              {diagnosis.weak_concept && (
+                <div className="flex items-center gap-1.5 mr-2">
+                  <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">
+                    Identified Weak Concept:
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-800 text-[11px] font-bold">
+                    {diagnosis.weak_concept.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              )}
+              {diagnosis.micro_concepts && diagnosis.micro_concepts.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Micro-Concepts:
+                  </span>
+                  {diagnosis.micro_concepts.map((mc, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 rounded-md bg-white border border-indigo-200 text-indigo-700 text-[11px] font-medium shadow-2xs"
+                    >
+                      🎯 {mc.replace(/_/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Evidence quote */}
           {diagnosis.evidence && (
             <div className="glass-panel-subtle p-3.5 rounded-xl flex items-start gap-2.5">

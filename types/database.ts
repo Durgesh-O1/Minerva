@@ -140,6 +140,8 @@ export interface MisconceptionLogEntry {
   timestamp: string;
   problem?: string;
   concept_id?: ConceptId;
+  weak_concept?: string;
+  micro_concepts?: string[];
 }
 
 export interface RevisitScheduleItem {
@@ -176,6 +178,8 @@ export interface Diagnosis {
   confidence: number; // 0 to 1
   evidence: string;
   status: MisconceptionStatus;
+  weak_concept?: string;
+  micro_concepts?: string[];
 }
 
 export interface TutorResponse {
@@ -185,4 +189,5 @@ export interface TutorResponse {
   related_concepts: string[];
   understood: boolean;
   shortcut?: string;
+  trick?: string;
 }

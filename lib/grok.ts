@@ -47,12 +47,23 @@ export function getClientConfig() {
   };
 }
 
-const SYSTEM_PROMPT = `You are Minerva, an elite AI study tutor.
+const SYSTEM_PROMPT = `You are Minerva, an elite AI study tutor and learning strategist.
 Your mission:
-1. Answer ANY study question (math, physics, biology, chemistry, history, literature, logic, etc.) directly, accurately, and clearly in 2-4 sentences.
-2. When evaluating math or fraction problems (such as 1/2 + 1/3, or 1/8 vs 1/3):
-   - If the student shows a misconception, guide them Socratically with a constructive question without giving away the final answer.
-   - Misconception IDs:
+1. Answer ANY study question (math, physics, biology, chemistry, history, literature, logic, etc.) directly, accurately, and clearly.
+2. If student notes or uploaded documents are provided, read and analyze them carefully, reference them directly, and use them to explain concepts, answer questions, or spot gaps.
+3. EASIEST SOLUTIONS & SHORTCUT TRICKS:
+   - Always teach the EASIEST, most intuitive solution.
+   - When teaching multiplication tables, mental math, or calculations, ALWAYS provide clever memory hacks and tricks!
+   - Example (9-Times Table Trick):
+     * Trick 1 (Digits Pattern): Tens column counts up 0 to 9, Ones column counts down 9 to 0 -> 09, 18, 27, 36, 45, 54, 63, 72, 81, 90!
+     * Trick 2 (Finger Trick): Hold out 10 fingers. To find 9 x N, fold finger N. Fingers to left = tens digit, fingers to right = ones digit (e.g. 9 x 4: 3 left, 6 right = 36).
+     * Trick 3 (Sum of Digits): Digits of multiples of 9 always sum to 9 (e.g. 5 + 4 = 9).
+     * Trick 4 (10x minus N): 9 x 8 = 80 - 8 = 72.
+   - Example (Fractions): Butterfly Cross-Multiplication Method.
+   - Example (11-Times Table): Split the two digits and insert their sum in the middle (e.g. 11 x 25 = 2[2+5]5 = 275).
+4. CONCEPT & MICRO-CONCEPT DIAGNOSIS:
+   - Analyze the student's answer or approach to pinpoint exactly which concept they are weak in ("weak_concept") and the granular underlying atomic components ("micro_concepts", e.g. ["tens_place_progression", "digit_sum_invariance"] or ["common_denominator_requirement", "unit_partitioning"]).
+   - Fraction Misconception IDs:
      * M1: Adds tops and bottoms across (e.g. 1/2 + 1/3 = 2/5)
      * M2: Believes larger denominator means bigger fraction (e.g. 1/8 > 1/3)
      * M3: Assumes equal numerators mean equal fractions (e.g. 2/5 = 2/7)
@@ -64,16 +75,20 @@ Your mission:
 
 Reply ONLY with a single valid JSON object matching:
 {
-  "reply": "string (your helpful, real tutor answer)",
+  "reply": "string (your helpful, real tutor answer, explaining the easiest solution/trick)",
   "diagnosis": {
     "misconception_id": "M1" | "M2" | "M3" | "M4" | "M5" | "careless_slip" | "none" | "unknown",
     "confidence": 0.0 to 1.0,
     "evidence": "brief explanation (under 10 words)",
-    "status": "suspected" | "confirmed" | "resolved"
+    "status": "suspected" | "confirmed" | "resolved",
+    "weak_concept": "e.g. 'multiplication_tables' or 'fraction_addition'",
+    "micro_concepts": ["micro_concept_1", "micro_concept_2"]
   },
   "hint_level": 0 to 3,
   "related_concepts": ["concept1", "concept2"],
-  "understood": boolean
+  "understood": boolean,
+  "shortcut": "optional 1-sentence easiest method summary",
+  "trick": "optional clever trick or mental math hack"
 }
 Always ensure the JSON is fully closed and valid.`;
 
@@ -212,6 +227,10 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
           status: ['suspected', 'confirmed', 'resolved'].includes(obj.diagnosis?.status)
             ? obj.diagnosis.status
             : 'resolved',
+          weak_concept: obj.diagnosis?.weak_concept ? String(obj.diagnosis.weak_concept) : undefined,
+          micro_concepts: Array.isArray(obj.diagnosis?.micro_concepts)
+            ? obj.diagnosis.micro_concepts.map(String)
+            : undefined,
         },
         hint_level: Math.min(3, Math.max(0, Number(obj.hint_level) || 0)),
         related_concepts: Array.isArray(obj.related_concepts) && obj.related_concepts.length > 0
@@ -219,6 +238,7 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
           : ['general_study'],
         understood: Boolean(obj.understood ?? true),
         shortcut: obj.shortcut ? String(obj.shortcut) : undefined,
+        trick: obj.trick ? String(obj.trick) : undefined,
       };
     }
   } catch {
@@ -233,6 +253,10 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
     const validMIds = ['M1', 'M2', 'M3', 'M4', 'M5', 'careless_slip', 'none', 'unknown'];
     const extractedMId = mMatch && validMIds.includes(mMatch[1]) ? (mMatch[1] as MisconceptionId) : 'none';
 
+    const weakMatch = cleaned.match(/"weak_concept"\s*:\s*"([^"]+)"/);
+    const trickMatch = cleaned.match(/"trick"\s*:\s*"([^"]+)"/);
+    const shortcutMatch = cleaned.match(/"shortcut"\s*:\s*"([^"]+)"/);
+
     return {
       reply: extractedReply.trim(),
       diagnosis: {
@@ -240,10 +264,14 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
         confidence: 0.95,
         evidence: 'Live AI structured response',
         status: 'resolved',
+        weak_concept: weakMatch ? weakMatch[1] : undefined,
+        micro_concepts: undefined,
       },
       hint_level: 0,
       related_concepts: ['general_study'],
       understood: true,
+      shortcut: shortcutMatch ? shortcutMatch[1] : undefined,
+      trick: trickMatch ? trickMatch[1] : undefined,
     };
   }
 
@@ -313,6 +341,65 @@ export function getScriptedDemoResponse(
       hint_level: turnResult.hintLevel,
       related_concepts: ['common_denominators', 'adding_fractions'],
       understood: turnResult.understood,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 1b. Multiplication Table Tricks (9-Times Table, 11-Times Table, etc.)
+  // -------------------------------------------------------------------------
+  if (
+    lastUserMsg.includes('9 table') ||
+    lastUserMsg.includes('table of 9') ||
+    lastUserMsg.includes('9 times table') ||
+    lastUserMsg.includes('multiplication table') ||
+    lastUserMsg.includes('table trick') ||
+    lastUserMsg.includes('tables trick') ||
+    lastUserMsg.includes('learn tables') ||
+    lastUserMsg.includes('learn 9')
+  ) {
+    return {
+      reply: `Here are the 3 easiest tricks to master the 9 times table instantly:\n\n1. **The Counting Trick (0→9 & 9→0)**:\n• In the tens column, write digits 0 to 9 going down: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9\n• In the ones column, write digits 9 to 0 going down: 9, 8, 7, 6, 5, 4, 3, 2, 1, 0\n• Put them together: 09, 18, 27, 36, 45, 54, 63, 72, 81, 90! Done!\n\n2. **The Finger Trick**:\nHold out both hands (10 fingers). To find 9 × N, fold down finger #N from the left.\n• Fingers to the left of the folded finger = tens digit.\n• Fingers to the right = ones digit.\n*Example for 9 × 4*: Fold your 4th finger. You have 3 fingers on the left, 6 on the right = 36!\n\n3. **The Sum-to-9 Invariant**:\nThe digits of every multiple of 9 always add up to 9 (1+8=9, 2+7=9, 3+6=9, 4+5=9)!`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: 'Taught 9-times table pattern, finger method, and digit invariants.',
+        status: 'resolved',
+        weak_concept: 'multiplication_tables',
+        micro_concepts: ['tens_place_progression', 'digit_sum_invariance', 'finger_counting_patterns'],
+      },
+      hint_level: 0,
+      related_concepts: ['multiplication_tables', 'mental_math_shortcuts'],
+      understood: true,
+      shortcut: '🚀 9-Table Finger Trick: Fold finger N, fingers on left = tens, fingers on right = ones!',
+      trick: 'Tens column goes 0 to 9 down; ones column goes 9 to 0 down! Combine: 09, 18, 27, 36, 45, 54, 63, 72, 81, 90.',
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 1c. Document / Notes Analysis
+  // -------------------------------------------------------------------------
+  if (
+    (lastUserMsg.includes('document') ||
+      lastUserMsg.includes('note') ||
+      lastUserMsg.includes('attachment') ||
+      lastUserMsg.includes('uploaded') ||
+      lastUserMsg.includes('read my')) &&
+    studentNotes &&
+    studentNotes.trim().length > 0
+  ) {
+    return {
+      reply: `I've read through your uploaded document/notes! Here is a summary of what you have:\n\n${studentNotes.slice(0, 350)}${studentNotes.length > 350 ? '...' : ''}\n\nWhat specific question or problem from your notes would you like to solve or learn a trick for?`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.95,
+        evidence: 'Analyzed uploaded document/notes context.',
+        status: 'resolved',
+        weak_concept: 'document_comprehension',
+        micro_concepts: ['note_synthesis', 'key_takeaway_extraction'],
+      },
+      hint_level: 0,
+      related_concepts: ['document_study', 'note_review'],
+      understood: true,
     };
   }
 
@@ -417,6 +504,8 @@ export function getScriptedDemoResponse(
         confidence: 0.9,
         evidence: 'Student inquired why common denominators are necessary; explained unit partition principle.',
         status: 'suspected',
+        weak_concept: 'compatible_partition_units',
+        micro_concepts: ['least_common_multiple', 'unit_partition_size'],
       },
       hint_level: 2,
       related_concepts: ['common_denominators', 'equal_parts'],
@@ -442,6 +531,8 @@ export function getScriptedDemoResponse(
         confidence: 0.95,
         evidence: 'Student explored cognitive contradiction between 2/5 and 1/2.',
         status: 'confirmed',
+        weak_concept: 'fraction_addition_principles',
+        micro_concepts: ['common_denominator_requirement', 'quantity_conservation'],
       },
       hint_level: 1,
       related_concepts: ['comparing_fractions', 'adding_fractions'],

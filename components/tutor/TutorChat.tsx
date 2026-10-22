@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Diagnosis, TutorResponse } from '@/types/database';
 import ProblemCard, { PROBLEMS } from './ProblemCard';
 import DiagnosisPanel from './DiagnosisPanel';
-import { Send, Sparkles, Zap, Bot, User, Volume2, VolumeX, Mic, MicOff, FileText, ArrowRight } from 'lucide-react';
+import { Send, Sparkles, Zap, Bot, User, Volume2, VolumeX, Mic, MicOff, FileText, ArrowRight, Paperclip, X, Lightbulb } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -14,6 +14,8 @@ interface ChatMessage {
   hintLevel?: number;
   understood?: boolean;
   shortcut?: string;
+  trick?: string;
+  attachmentName?: string;
   timestamp: string;
 }
 
@@ -61,9 +63,36 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
   const [currentHintLevel, setCurrentHintLevel] = useState<number>(0);
   const [isConceptUnderstood, setIsConceptUnderstood] = useState<boolean>(false);
   const [relatedConcepts, setRelatedConcepts] = useState<string[]>(['common_denominators', 'equivalent_fractions']);
+  const [attachedDoc, setAttachedDoc] = useState<{ name: string; size: string; content: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const sizeStr = file.size < 1024 
+      ? `${file.size} B` 
+      : file.size < 1024 * 1024 
+      ? `${(file.size / 1024).toFixed(1)} KB` 
+      : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawContent = (event.target?.result as string) || '';
+      // Limit to 4000 characters to stay within prompt budget
+      const truncated = rawContent.slice(0, 4000);
+      setAttachedDoc({
+        name: file.name,
+        size: sizeStr,
+        content: truncated,
+      });
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -125,15 +154,18 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
     const text = (textToSend || input).trim();
     if (!text || loading) return;
 
+    const currentDoc = attachedDoc;
     const userMessage: ChatMessage = {
       id: `user_${Date.now()}`,
       role: 'user',
       content: text,
+      attachmentName: currentDoc?.name,
       timestamp: 'Just now',
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setAttachedDoc(null);
     setLoading(true);
 
     try {
@@ -142,13 +174,19 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         content: m.content,
       }));
 
+      // Combine studentNotes with uploaded document content
+      const docHeader = currentDoc ? `[Uploaded Document: "${currentDoc.name}"]:\n${currentDoc.content}` : '';
+      const combinedNotes = docHeader
+        ? (studentNotes ? `${studentNotes}\n\n${docHeader}` : docHeader)
+        : studentNotes;
+
       const res = await fetch('/api/tutor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: historyToSend,
           studentId: 'demo_student',
-          notes: studentNotes,
+          notes: combinedNotes,
         }),
       });
 
@@ -175,6 +213,7 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
         hintLevel: data.hint_level,
         understood: data.understood,
         shortcut: data.shortcut,
+        trick: data.trick,
         timestamp: 'Just now',
       };
 
@@ -332,12 +371,61 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
                         : 'glass-panel-subtle text-[#22223B] rounded-tl-xs border border-white/80 shadow-2xs font-medium'
                     }`}
                   >
+                    {/* User Attachment Tag */}
+                    {isUser && msg.attachmentName && (
+                      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-indigo-100 bg-indigo-700/70 border border-indigo-400/40 px-2.5 py-1 rounded-lg w-fit">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span>Attached Document: {msg.attachmentName}</span>
+                      </div>
+                    )}
+
                     <div className="whitespace-pre-wrap">{cleanContent(msg.content)}</div>
 
+                    {/* Socratic Cognitive Conflict Highlight */}
                     {!isUser && msg.content.includes('absurd') && (
                       <div className="mt-2.5 p-2 rounded-lg bg-[rgba(217,119,6,0.12)] border border-[rgba(217,119,6,0.25)] text-[#B45309] text-xs font-bold flex items-center gap-2">
                         <span className="text-base">⚡</span>
                         <span>Cognitive Conflict: Can a sum be smaller than the pieces you started with?</span>
+                      </div>
+                    )}
+
+                    {/* Easiest Solution & Trick Callout */}
+                    {!isUser && (msg.trick || msg.shortcut) && (
+                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 text-amber-950 text-xs space-y-1 shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                          <Zap className="w-4 h-4 fill-amber-500 text-amber-600" />
+                          <span>💡 Easiest Solution & Trick:</span>
+                        </div>
+                        <p className="font-medium text-amber-950/90 leading-relaxed whitespace-pre-wrap">
+                          {msg.trick || msg.shortcut}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Weak Concept & Micro-Concepts Tag */}
+                    {!isUser && (msg.diagnosis?.weak_concept || (msg.diagnosis?.micro_concepts && msg.diagnosis.micro_concepts.length > 0)) && (
+                      <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex flex-wrap items-center gap-1.5 text-[11px]">
+                        {msg.diagnosis.weak_concept && (
+                          <div className="flex items-center gap-1 mr-1">
+                            <span className="font-semibold text-slate-500">Identified Gap:</span>
+                            <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-[10px]">
+                              {msg.diagnosis.weak_concept.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        )}
+                        {msg.diagnosis.micro_concepts && msg.diagnosis.micro_concepts.length > 0 && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-slate-400 font-medium">Micro-Concepts:</span>
+                            {msg.diagnosis.micro_concepts.map((mc, idx) => (
+                              <span
+                                key={idx}
+                                className="px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-indigo-700 font-medium text-[10px] shadow-2xs"
+                              >
+                                🎯 {mc.replace(/_/g, ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -410,8 +498,57 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
           ))}
         </div>
 
+        {/* Attached Document Banner */}
+        {attachedDoc && (
+          <div className="px-4 py-2 bg-indigo-50/90 border-t border-indigo-100 flex items-center justify-between text-xs text-indigo-950 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded bg-indigo-100 text-indigo-600">
+                <FileText className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="font-bold text-slate-800">{attachedDoc.name}</span>
+                <span className="ml-2 text-[10px] text-slate-500">({attachedDoc.size})</span>
+                <span className="ml-2 inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Ready for AI Analysis
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAttachedDoc(null)}
+              className="text-slate-400 hover:text-rose-600 p-1 rounded-md transition cursor-pointer"
+              title="Remove attachment"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Input box */}
         <div className="p-3 bg-[rgba(242,233,228,0.75)] border-t border-white/60 flex items-center gap-2 shrink-0">
+          {/* File Upload Hidden Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept=".txt,.md,.json,.csv,.ts,.js,.py,.pdf,.doc,.docx"
+            className="hidden"
+          />
+
+          {/* Attachment Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach notes or study document (TXT, MD, PDF, Code)"
+            className={`p-2.5 rounded-xl border transition cursor-pointer ${
+              attachedDoc
+                ? 'bg-[#22223B] text-white border-white/40 shadow-xs'
+                : 'glass-btn text-[#4A4E69] hover:text-[#22223B] border-white/60'
+            }`}
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
+
           {speechSupported && (
             <button
               type="button"
@@ -432,20 +569,67 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-            placeholder="Ask any study question or explain your approach (e.g., 'What is gravity?', '1/2 + 1/3 = 2/5')..."
+            placeholder={
+              attachedDoc
+                ? `Ask anything about "${attachedDoc.name}" or hit send for a breakdown...`
+                : "Ask any study question, trick, or problem (e.g., 'Trick for 9 table', '1/2 + 1/3 = 2/5')..."
+            }
             disabled={loading}
             className="flex-1 bg-white/85 border border-white/90 rounded-xl px-4 py-2.5 text-sm text-[#22223B] placeholder-[#4A4E69]/60 focus:outline-hidden focus:ring-2 focus:ring-[#22223B]/30 focus:bg-white transition"
           />
 
           <button
-            onClick={() => handleSendMessage()}
-            disabled={!input.trim() || loading}
+            onClick={() => handleSendMessage(input || (attachedDoc ? 'Please analyze and explain my attached study document' : ''))}
+            disabled={(!input.trim() && !attachedDoc) || loading}
             className="glass-btn-primary p-2.5 rounded-xl font-bold disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
       </div>
+
+      {/* Shortcut / Easiest Method Modal */}
+      {showShortcutModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-200">
+                <Zap className="w-6 h-6 fill-current" />
+              </div>
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-600">
+                  Concept Mastery Verified
+                </span>
+                <h3 className="text-lg font-extrabold text-slate-900">Easiest Method / Shortcut</h3>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 text-sm text-slate-800 space-y-2">
+              <p className="font-bold text-amber-900">
+                🦋 The Butterfly Shortcut for Adding Fractions:
+              </p>
+              <div className="font-mono text-xs bg-white p-3 rounded-lg border border-amber-200 space-y-1">
+                <div>1/2 + 1/3</div>
+                <div>1. Cross-multiply 1 × 3 = 3</div>
+                <div>2. Cross-multiply 2 × 1 = 2</div>
+                <div>3. Add numerators: 3 + 2 = 5</div>
+                <div>4. Multiply bottoms: 2 × 3 = 6</div>
+                <div className="font-bold text-indigo-700 pt-1">Result = 5/6!</div>
+              </div>
+              <p className="text-xs text-amber-800/90 italic">
+                &ldquo;Remember: This shortcut works because you are finding equivalent fractions with a common denominator of 6 behind the scenes!&rdquo;
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowShortcutModal(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition cursor-pointer"
+            >
+              Got it, continue practicing
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

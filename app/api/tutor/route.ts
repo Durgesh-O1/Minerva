@@ -21,13 +21,16 @@ export async function POST(req: NextRequest) {
     // Save diagnosis to student misconception log in db.json if diagnosis is meaningful
     if (tutorResponse.diagnosis && tutorResponse.diagnosis.misconception_id !== 'none') {
       try {
+        const lastUserPrompt = messages.filter((m: any) => m.role === 'user').pop()?.content || 'Math problem';
         await logMisconception(studentId, {
           misconception_id: tutorResponse.diagnosis.misconception_id,
           concept_id: (tutorResponse.related_concepts[0] as ConceptId) || 'adding_fractions',
           status: tutorResponse.diagnosis.status,
           confidence: tutorResponse.diagnosis.confidence,
           evidence: tutorResponse.diagnosis.evidence,
-          problem: 'What is 1/2 + 1/3?',
+          problem: lastUserPrompt.slice(0, 100),
+          weak_concept: tutorResponse.diagnosis.weak_concept,
+          micro_concepts: tutorResponse.diagnosis.micro_concepts,
         });
       } catch (dbError) {
         console.error('Failed to log misconception to db.json:', dbError);
