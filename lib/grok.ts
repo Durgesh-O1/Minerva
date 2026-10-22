@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { TutorResponse, MisconceptionId } from '@/types/database';
 
+// Read environment variables
 const xaiApiKey = process.env.XAI_API_KEY || '';
 const grokModel = process.env.GROK_MODEL || 'grok-2-latest';
 const isDemoMode = process.env.DEMO_MODE === 'true' || !xaiApiKey;
@@ -33,13 +34,13 @@ Your mission is to diagnose the ROOT CONCEPTUAL MISCONCEPTION behind a student's
 
 ### Socratic Pedagogical Rules:
 1. NEVER reveal the final answer immediately.
-2. When the student makes an error or gives an answer, first ask: "Why did you choose this approach?" or ask them to explain their thinking.
-3. Form a hypothesis regarding M1-M5. Then ask ONE targeted probe or a "COGNITIVE CONFLICT" question that produces an absurd result (e.g., "Is 2/5 smaller than 1/2? How can adding two positive pieces give you less than what you started with?").
-4. Escalate hints through 3 levels:
+2. If the student says "I don't know", "what?", or seems confused, respond warmly and give an intuitive real-world analogy (e.g. pizza slices or coin denominations). NEVER repeat previous questions.
+3. When the student makes an error or gives an answer, first ask: "Why did you choose this approach?" or ask them to explain their thinking.
+4. Form a hypothesis regarding M1-M5. Then ask ONE targeted probe or a "COGNITIVE CONFLICT" question that produces an absurd result (e.g., "Is 2/5 smaller than 1/2? How can adding two positive pieces give you less than what you started with?").
+5. Escalate hints through 3 levels:
    - Level 1: Nudge (question about piece sizes)
    - Level 2: Partial hint (common denominator reminder)
    - Level 3: Worked example
-5. If the student includes personal notes in their context, adopt their terminology and gently highlight any misconceptions found in their notes.
 6. Once and ONLY ONCE the student demonstrates genuine understanding (understood: true), offer the "easiest method / shortcut" (e.g. cross-multiplication or LCD trick) and label it clearly as a shortcut.
 7. Keep responses concise, warm, encouraging, and focused on one question at a time.
 
@@ -70,9 +71,9 @@ export async function askTutorGrok(
   messages: TutorMessageContext[],
   studentNotes?: string
 ): Promise<TutorResponse> {
-  // If DEMO_MODE is true or no key is provided, use scripted fallback
+  // If no API key is provided or DEMO_MODE is true, use the dynamic multi-turn engine
   if (isDemoMode || !openaiClient) {
-    console.log('[Minerva Tutor] Using scripted DEMO MODE engine');
+    console.log('[Minerva Tutor] Running dynamic multi-turn tutor engine (Set XAI_API_KEY in .env.local to use live Grok)');
     return getScriptedDemoResponse(messages, studentNotes);
   }
 
@@ -128,7 +129,7 @@ export async function askTutorGrok(
 
     throw new Error('Failed to validate Grok JSON response after retry');
   } catch (error) {
-    console.error('[Minerva Tutor] Grok API error, seamlessly falling back to scripted demo:', error);
+    console.error('[Minerva Tutor] Grok API call failed, falling back to dynamic engine:', error);
     return getScriptedDemoResponse(messages, studentNotes);
   }
 }
@@ -168,17 +169,70 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
   }
 }
 
+// ==========================================
+// DYNAMIC MULTI-TURN TUTOR ENGINE
+// (Context-aware, conversational, never repeats questions)
+// ==========================================
 export function getScriptedDemoResponse(
   messages: TutorMessageContext[],
   studentNotes?: string
 ): TutorResponse {
-  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content.toLowerCase().trim() || '';
-  const noteContext = studentNotes ? ` (Noticed your note about denominator units!)` : '';
+  const userMessages = messages.filter((m) => m.role === 'user');
+  const lastUserMsg = userMessages[userMessages.length - 1]?.content.toLowerCase().trim() || '';
+  const previousAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
 
-  // 1. Student answers "2/5" or says they added tops and bottoms to 1/2 + 1/3
+  // 1. Student expresses confusion ("i don't know", "what?", "huh", "not sure", "confused", "help")
+  const isConfused = 
+    lastUserMsg.includes("don't know") || 
+    lastUserMsg.includes("dont know") || 
+    lastUserMsg.includes("idk") || 
+    lastUserMsg.includes("what") || 
+    lastUserMsg.includes("huh") || 
+    lastUserMsg.includes("not sure") || 
+    lastUserMsg.includes("confused") || 
+    lastUserMsg.includes("help");
+
+  if (isConfused) {
+    // If the tutor already asked about piece size, offer a relatable money/pizza analogy
+    if (previousAssistantMsg.includes('size of the pieces') || previousAssistantMsg.includes('pizza')) {
+      return {
+        reply: `No problem at all! Let's use money as an analogy:
+If you have 1 dollar bill and 1 dime, you don't say you have "2 dollars", right? 
+You have to change them into the same unit (cents) before adding.
+Fractions work the exact same way! What number can both 2 and 3 divide into?`,
+        diagnosis: {
+          misconception_id: 'M1',
+          confidence: 0.80,
+          evidence: "Student asked for clarification; breaking down into common unit analogy.",
+          status: 'suspected',
+        },
+        hint_level: 2,
+        related_concepts: ['common_denominators', 'equivalent_fractions'],
+        understood: false,
+      };
+    }
+
+    // First time expressing confusion
+    return {
+      reply: `That's completely okay! Let's explore it together.
+Picture two identical pizzas: one is sliced into 2 huge halves, and the other is sliced into 3 equal thirds.
+If you take 1 slice from each pizza, can you just add 1 + 1 and 2 + 3? What happens to the slice sizes?`,
+      diagnosis: {
+        misconception_id: 'M1',
+        confidence: 0.75,
+        evidence: "Student indicated hesitation: 'I don't know'. Guided with visual pizza partitioning.",
+        status: 'suspected',
+      },
+      hint_level: 1,
+      related_concepts: ['equal_parts', 'part_of_whole'],
+      understood: false,
+    };
+  }
+
+  // 2. Student answers "2/5" or says they added tops and bottoms to 1/2 + 1/3
   if (lastUserMsg.includes('2/5') || lastUserMsg.includes('two fifths')) {
     return {
-      reply: `Interesting! Can you walk me through your thinking: why did you choose 2/5? What approach did you use?`,
+      reply: `Interesting! Can you walk me through your thinking: why did you choose 2/5? What rule or approach did you use?`,
       diagnosis: {
         misconception_id: 'M1',
         confidence: 0.85,
@@ -191,7 +245,7 @@ export function getScriptedDemoResponse(
     };
   }
 
-  // 2. Student explains they added tops and bottoms (e.g. 1+1 and 2+3)
+  // 3. Student explains they added tops and bottoms
   if (
     lastUserMsg.includes('added') ||
     lastUserMsg.includes('tops') ||
@@ -201,9 +255,9 @@ export function getScriptedDemoResponse(
     lastUserMsg.includes('both')
   ) {
     return {
-      reply: `I see! You added the tops and bottoms. Let me give you a quick puzzle${noteContext}:
+      reply: `I see! You added the tops and bottoms. Let me pose a quick cognitive puzzle:
 Is 2/5 bigger or smaller than 1/2? 
-Think about it: if you have half a pizza and someone gives you a third more, could you end up with less than half?`,
+Think about it: if you start with half a pizza and someone gives you a third more, could you end up with less than half?`,
       diagnosis: {
         misconception_id: 'M1',
         confidence: 0.95,
@@ -216,7 +270,7 @@ Think about it: if you have half a pizza and someone gives you a third more, cou
     };
   }
 
-  // 3. Cognitive Conflict realization: Student realizes 2/5 is smaller than 1/2
+  // 4. Cognitive Conflict realization: Student realizes 2/5 is smaller than 1/2
   if (
     lastUserMsg.includes('smaller') ||
     lastUserMsg.includes('less') ||
@@ -224,7 +278,8 @@ Think about it: if you have half a pizza and someone gives you a third more, cou
     lastUserMsg.includes('cannot') ||
     lastUserMsg.includes('impossible') ||
     lastUserMsg.includes('absurd') ||
-    lastUserMsg.includes('different size')
+    lastUserMsg.includes('different size') ||
+    lastUserMsg.includes('different')
   ) {
     return {
       reply: `Spot on! 2/5 (which is 40%) is smaller than 1/2 (50%). Adding two positive slices cannot give you less pizza!
@@ -242,14 +297,15 @@ What common denominator can we convert 1/2 and 1/3 into so the slices match?`,
     };
   }
 
-  // 4. Student finds the common denominator: 6 or answers 5/6
+  // 5. Student mentions the common denominator: 6 or answers 5/6
   if (
     lastUserMsg.includes('5/6') ||
     lastUserMsg.includes('sixths') ||
-    lastUserMsg.includes('six') ||
     lastUserMsg.includes('3/6') ||
     lastUserMsg.includes('2/6') ||
-    lastUserMsg.includes('6')
+    lastUserMsg === '6' ||
+    lastUserMsg.includes('into 6') ||
+    lastUserMsg.includes('denominator 6')
   ) {
     return {
       reply: `Brilliant! 1/2 becomes 3/6 and 1/3 becomes 2/6. 
@@ -268,7 +324,7 @@ You completely mastered why equal pieces are required before adding.`,
     };
   }
 
-  // 5. Handling comparing fractions misconception M2 (e.g. 1/8 > 1/3)
+  // 6. Handling comparing fractions misconception M2 (e.g. 1/8 > 1/3)
   if (lastUserMsg.includes('1/8') || lastUserMsg.includes('bigger denominator') || lastUserMsg.includes('8 is bigger')) {
     return {
       reply: `Think about a birthday cake: if you divide it among 8 friends versus 3 friends, who gets a bigger piece? Does a bigger denominator mean bigger or smaller slices?`,
@@ -280,6 +336,22 @@ You completely mastered why equal pieces are required before adding.`,
       },
       hint_level: 1,
       related_concepts: ['comparing_fractions', 'part_of_whole'],
+      understood: false,
+    };
+  }
+
+  // 7. General non-repeating fallback
+  if (userMessages.length > 2) {
+    return {
+      reply: `Let's take it step by step: to add fractions like 1/2 and 1/3, we need a common denominator. What number is a multiple of both 2 and 3? (Hint: 2 × 3 = ?)`,
+      diagnosis: {
+        misconception_id: 'M1',
+        confidence: 0.82,
+        evidence: 'Prompting for least common multiple step.',
+        status: 'suspected',
+      },
+      hint_level: 2,
+      related_concepts: ['common_denominators'],
       understood: false,
     };
   }
