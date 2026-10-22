@@ -1,6 +1,6 @@
 {
   "clockOffsetDays": 0,
-  "lastUpdated": "2026-10-22T09:10:34.386Z",
+  "lastUpdated": "2026-10-22T09:23:10.716Z",
   "students": [
     {
       "id": "demo_student",
@@ -8,7 +8,7 @@
       "email": "alex.chen@school.edu",
       "avatar": "AC",
       "isDemoStudent": true,
-      "lastActive": "2026-10-22T09:10:34.385Z",
+      "lastActive": "2026-10-22T09:23:10.715Z",
       "overallMastery": 54,
       "masteryByConcept": {
         "equal_parts": 75,
@@ -28,8 +28,8 @@
           "confidence": 0.78,
           "evidence": "Guiding through unit conversion steps.",
           "problem": "What is 1/2 + 1/3?",
-          "id": "log_1792660234385_5og5e",
-          "timestamp": "2026-10-22T09:10:34.385Z"
+          "id": "log_1792660990715_zxwwq",
+          "timestamp": "2026-10-22T09:23:10.715Z"
         },
         {
           "id": "log_demo_2",
