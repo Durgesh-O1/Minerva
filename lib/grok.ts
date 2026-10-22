@@ -14,9 +14,19 @@ function getClientConfig() {
   const isXai = Boolean(xaiApiKey);
   const effectiveApiKey = xaiApiKey || openRouterApiKey;
   const baseURL = isXai ? 'https://api.x.ai/v1' : 'https://openrouter.ai/api/v1';
-  const model = isXai
-    ? (process.env.GROK_MODEL || 'grok-2-latest')
-    : (process.env.GROK_MODEL || 'x-ai/grok-4.7');
+
+  let model = process.env.GROK_MODEL?.trim();
+  if (isXai) {
+    if (!model || model.includes('/')) {
+      model = 'grok-2-latest';
+    }
+  } else {
+    // OpenRouter models require provider prefix (e.g. minimax/minimax-m3.1-flash:free)
+    if (!model || !model.includes('/')) {
+      model = 'minimax/minimax-m3.1-flash:free';
+    }
+  }
+
   const isDemo = process.env.DEMO_MODE === 'true';
 
   return {
@@ -95,17 +105,18 @@ export async function askTutorGrok(
     const client = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseURL,
-      timeout: 8000,
+      timeout: config.isXai ? 12000 : 5000,
     });
 
-    // Attempt with retry once on failure as per design requirements
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    const maxAttempts = config.isXai ? 2 : 1;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const response = await client.chat.completions.create({
           model: config.model,
           messages: formattedMessages,
           response_format: { type: 'json_object' },
-          max_tokens: config.isXai ? 350 : 120,
+          max_tokens: 500,
           temperature: 0.3,
         });
 
@@ -123,7 +134,7 @@ export async function askTutorGrok(
           }
         }
       } catch (apiError: any) {
-        if (attempt === 1) {
+        if (attempt < maxAttempts) {
           console.warn(`[Minerva Tutor] Grok attempt 1 failed (${apiError.message || apiError}), retrying...`);
           continue;
         }
@@ -345,6 +356,29 @@ export function getScriptedDemoResponse(
       },
       hint_level: 2,
       related_concepts: ['common_denominators', 'equivalent_fractions'],
+      understood: true,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 5b. Student asks about Pythagoras theorem or geometry
+  // -------------------------------------------------------------------------
+  if (
+    lastUserMsg.includes('pythagor') ||
+    lastUserMsg.includes('pythogor') ||
+    lastUserMsg.includes('a^2 + b^2') ||
+    lastUserMsg.includes('a² + b²')
+  ) {
+    return {
+      reply: `Pythagoras' theorem states that in any right-angled triangle, the square of the hypotenuse (the longest side c) equals the sum of the squares of the two shorter sides: a² + b² = c²! For example, with sides of 3 and 4: 3² + 4² = 9 + 16 = 25, which is 5².`,
+      diagnosis: {
+        misconception_id: 'none',
+        confidence: 0.99,
+        evidence: 'Explained Pythagoras theorem.',
+        status: 'resolved',
+      },
+      hint_level: 0,
+      related_concepts: ['geometry'],
       understood: true,
     };
   }
