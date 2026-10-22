@@ -102,42 +102,103 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
     scrollToBottom();
   }, [messages, loading]);
 
-  // Web Speech API STT
+  // Web Speech API STT Support Check
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         setSpeechSupported(true);
-        const recog = new SpeechRecognition();
-        recog.continuous = false;
-        recog.interimResults = false;
-        recog.lang = 'en-US';
-
-        recog.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
-          setIsListening(false);
-        };
-
-        recog.onerror = () => setIsListening(false);
-        recog.onend = () => setIsListening(false);
-        recognitionRef.current = recog;
       }
     }
   }, []);
 
-  const toggleListening = () => {
-    if (!recognitionRef.current) return;
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
+  const stopListening = () => {
+    if (recognitionRef.current) {
       try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (err) {
-        console.error('Speech recognition error:', err);
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.stop();
+      } catch {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
       }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
+  const startListening = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Google Chrome, Microsoft Edge, or Safari.');
+      return;
+    }
+
+    // Always stop and clean up any previous instance before creating a fresh one
+    stopListening();
+
+    try {
+      const recog = new SpeechRecognition();
+      recog.continuous = true;
+      recog.interimResults = true;
+      recog.lang = 'en-US';
+
+      const baseText = input.trim();
+
+      recog.onstart = () => {
+        setIsListening(true);
+      };
+
+      recog.onresult = (event: any) => {
+        let interim = '';
+        let currentFinal = '';
+
+        for (let i = 0; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            currentFinal += event.results[i][0].transcript + ' ';
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+
+        const spoken = (currentFinal + interim).trim();
+        if (spoken) {
+          setInput(baseText ? `${baseText} ${spoken}` : spoken);
+        }
+      };
+
+      recog.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          alert('Microphone access was denied. Please allow microphone permission in your browser address bar.');
+        }
+        if (event.error !== 'no-speech') {
+          stopListening();
+        }
+      };
+
+      recog.onend = () => {
+        setIsListening(false);
+        recognitionRef.current = null;
+      };
+
+      recognitionRef.current = recog;
+      recog.start();
+      setIsListening(true);
+    } catch (err: any) {
+      console.error('Failed to start speech recognition:', err);
+      setIsListening(false);
+    }
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
     }
   };
 
@@ -549,20 +610,26 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
             <Paperclip className="w-5 h-5" />
           </button>
 
-          {speechSupported && (
-            <button
-              type="button"
-              onClick={toggleListening}
-              className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                isListening
-                  ? 'bg-[#E11D48] text-white border-white animate-pulse'
-                  : 'glass-btn text-[#4A4E69]'
-              }`}
-              title={isListening ? 'Stop listening' : 'Speak your answer (Web Speech API)'}
-            >
-              {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5 text-[#9A8C98]" />}
-            </button>
-          )}
+          {/* Microphone Voice Input Button */}
+          <button
+            type="button"
+            onClick={toggleListening}
+            className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-center shrink-0 ${
+              isListening
+                ? 'bg-[#E11D48] text-white border-white shadow-md shadow-rose-300 animate-pulse ring-2 ring-rose-400'
+                : 'glass-btn text-[#4A4E69] hover:text-[#22223B]'
+            }`}
+            title={isListening ? 'Click to stop listening' : 'Click to speak your question/answer'}
+          >
+            {isListening ? (
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <Mic className="w-5 h-5 fill-current" />
+              </span>
+            ) : (
+              <Mic className="w-5 h-5" />
+            )}
+          </button>
 
           <input
             type="text"
@@ -570,12 +637,16 @@ export default function TutorChat({ studentNotes, onOpenNotes, onConceptSelect }
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             placeholder={
-              attachedDoc
+              isListening
+                ? "🎙️ Listening to your voice... Speak now (click mic again to stop)"
+                : attachedDoc
                 ? `Ask anything about "${attachedDoc.name}" or hit send for a breakdown...`
                 : "Ask any study question, trick, or problem (e.g., 'Trick for 9 table', '1/2 + 1/3 = 2/5')..."
             }
             disabled={loading}
-            className="flex-1 bg-white/85 border border-white/90 rounded-xl px-4 py-2.5 text-sm text-[#22223B] placeholder-[#4A4E69]/60 focus:outline-hidden focus:ring-2 focus:ring-[#22223B]/30 focus:bg-white transition"
+            className={`flex-1 bg-white/85 border border-white/90 rounded-xl px-4 py-2.5 text-sm text-[#22223B] placeholder-[#4A4E69]/60 focus:outline-hidden transition ${
+              isListening ? 'ring-2 ring-rose-500/70 bg-rose-50/40' : 'focus:ring-2 focus:ring-[#22223B]/30 focus:bg-white'
+            }`}
           />
 
           <button
