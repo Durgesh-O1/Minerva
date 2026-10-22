@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Call Grok with fallback
-    const tutorResponse = await askTutorGrok(messages, notes);
+    const tutorResponse = await askTutorGrok(messages, notes, studentId);
 
     // Save diagnosis to student misconception log in db.json if diagnosis is meaningful
     if (tutorResponse.diagnosis && tutorResponse.diagnosis.misconception_id !== 'none') {

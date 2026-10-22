@@ -1,6 +1,6 @@
 {
   "clockOffsetDays": 0,
-  "lastUpdated": "2026-10-22T07:56:39.592Z",
+  "lastUpdated": "2026-10-22T09:10:34.386Z",
   "students": [
     {
       "id": "demo_student",
@@ -8,7 +8,7 @@
       "email": "alex.chen@school.edu",
       "avatar": "AC",
       "isDemoStudent": true,
-      "lastActive": "2026-10-22T07:56:39.591Z",
+      "lastActive": "2026-10-22T09:10:34.385Z",
       "overallMastery": 54,
       "masteryByConcept": {
         "equal_parts": 75,
@@ -25,11 +25,11 @@
           "misconception_id": "M1",
           "concept_id": "common_denominators",
           "status": "suspected",
-          "confidence": 0.85,
-          "evidence": "Student answered '2/5' for 1/2 + 1/3, indicating adding numerators and denominators.",
+          "confidence": 0.78,
+          "evidence": "Guiding through unit conversion steps.",
           "problem": "What is 1/2 + 1/3?",
-          "id": "log_1792655799591_5s4mo",
-          "timestamp": "2026-10-22T07:56:39.591Z"
+          "id": "log_1792660234385_5og5e",
+          "timestamp": "2026-10-22T09:10:34.385Z"
         },
         {
           "id": "log_demo_2",
@@ -37,7 +37,7 @@
           "status": "suspected",
           "confidence": 0.74,
           "evidence": "Struggled to see why slices need to be the same size before counting pieces.",
-          "timestamp": "2026-10-22T06:47:15.515Z",
+          "timestamp": "2026-10-22T08:14:02.449Z",
           "problem": "Why do we need a common denominator before adding?",
           "concept_id": "common_denominators"
         }
@@ -47,7 +47,7 @@
           "id": "rev_demo_1",
           "misconception_id": "M2",
           "intervalDays": 1,
-          "dueDate": "2026-10-22T05:37:15.515Z",
+          "dueDate": "2026-10-22T07:04:02.449Z",
           "completed": false
         }
       ]
@@ -57,7 +57,7 @@
       "name": "Sophia Martinez",
       "email": "sophia.m@school.edu",
       "avatar": "SM",
-      "lastActive": "2026-10-22T05:37:15.515Z",
+      "lastActive": "2026-10-22T07:04:02.449Z",
       "overallMastery": 42,
       "masteryByConcept": {
         "equal_parts": 60,
@@ -76,7 +76,7 @@
           "status": "confirmed",
           "confidence": 0.95,
           "evidence": "Solved 2/5 + 1/4 = 3/9. Explicitly stated \"straight across top and bottom\".",
-          "timestamp": "2026-10-22T04:37:15.515Z",
+          "timestamp": "2026-10-22T06:04:02.449Z",
           "problem": "2/5 + 1/4",
           "concept_id": "adding_fractions"
         },
@@ -86,7 +86,7 @@
           "status": "confirmed",
           "confidence": 0.88,
           "evidence": "Ranked 1/9 as greater than 1/4 because \"9 is much higher than 4\".",
-          "timestamp": "2026-10-21T07:37:15.515Z",
+          "timestamp": "2026-10-21T09:04:02.449Z",
           "problem": "Which is bigger: 1/4 or 1/9?",
           "concept_id": "comparing_fractions"
         }
@@ -98,7 +98,7 @@
       "name": "Liam Johnson",
       "email": "liam.j@school.edu",
       "avatar": "LJ",
-      "lastActive": "2026-10-22T02:37:15.515Z",
+      "lastActive": "2026-10-22T04:04:02.449Z",
       "overallMastery": 78,
       "masteryByConcept": {
         "equal_parts": 90,
@@ -117,7 +117,7 @@
           "status": "resolved",
           "confidence": 0.91,
           "evidence": "Originally added numerators and denominators, but corrected after fraction bar visual probe.",
-          "timestamp": "2026-10-20T07:37:15.515Z",
+          "timestamp": "2026-10-20T09:04:02.449Z",
           "problem": "1/3 + 1/6",
           "concept_id": "adding_fractions"
         },
@@ -127,7 +127,7 @@
           "status": "resolved",
           "confidence": 0.85,
           "evidence": "Multiplied denominator incorrectly (3*4=11), caught immediately upon self-review.",
-          "timestamp": "2026-10-22T01:37:15.515Z",
+          "timestamp": "2026-10-22T03:04:02.449Z",
           "problem": "Common denominator for 1/3 and 1/4",
           "concept_id": "common_denominators"
         }
@@ -137,7 +137,7 @@
           "id": "rev_lj_1",
           "misconception_id": "M1",
           "intervalDays": 3,
-          "dueDate": "2026-10-23T07:37:15.515Z",
+          "dueDate": "2026-10-23T09:04:02.449Z",
           "completed": false
         }
       ]
@@ -147,7 +147,7 @@
       "name": "Emma Patel",
       "email": "emma.p@school.edu",
       "avatar": "EP",
-      "lastActive": "2026-10-22T06:37:15.515Z",
+      "lastActive": "2026-10-22T08:04:02.449Z",
       "overallMastery": 38,
       "masteryByConcept": {
         "equal_parts": 55,
@@ -166,7 +166,7 @@
           "status": "confirmed",
           "confidence": 0.96,
           "evidence": "Wrote 3/8 + 2/5 = 5/13 without finding common denominator.",
-          "timestamp": "2026-10-22T05:37:15.515Z",
+          "timestamp": "2026-10-22T07:04:02.449Z",
           "problem": "3/8 + 2/5",
           "concept_id": "adding_fractions"
         },
@@ -176,7 +176,7 @@
           "status": "confirmed",
           "confidence": 0.9,
           "evidence": "Claimed \"pieces are just pieces, why does size matter as long as we count how many we have?\".",
-          "timestamp": "2026-10-21T19:37:15.515Z",
+          "timestamp": "2026-10-21T21:04:02.449Z",
           "problem": "Combine 1 fourth-slice and 1 eighth-slice",
           "concept_id": "common_denominators"
         },
@@ -186,7 +186,7 @@
           "status": "suspected",
           "confidence": 0.76,
           "evidence": "Treated numerator 3 and denominator 8 as two separate puzzle numbers.",
-          "timestamp": "2026-10-21T01:37:15.515Z",
+          "timestamp": "2026-10-21T03:04:02.449Z",
           "problem": "Represent 3/8 on a scale",
           "concept_id": "part_of_whole"
         }
@@ -198,7 +198,7 @@
       "name": "Noah Williams",
       "email": "noah.w@school.edu",
       "avatar": "NW",
-      "lastActive": "2026-10-21T13:37:15.515Z",
+      "lastActive": "2026-10-21T15:04:02.449Z",
       "overallMastery": 65,
       "masteryByConcept": {
         "equal_parts": 85,
@@ -217,7 +217,7 @@
           "status": "confirmed",
           "confidence": 0.89,
           "evidence": "Decided 1/12 > 1/6 because \"12 beats 6 every time\".",
-          "timestamp": "2026-10-21T12:37:15.515Z",
+          "timestamp": "2026-10-21T14:04:02.449Z",
           "problem": "Compare 1/12 and 1/6",
           "concept_id": "comparing_fractions"
         },
@@ -227,7 +227,7 @@
           "status": "resolved",
           "confidence": 0.82,
           "evidence": "Recognized 1/4 + 1/4 cannot equal 2/8 (which is still 1/4). Corrected to 2/4.",
-          "timestamp": "2026-10-20T15:37:15.515Z",
+          "timestamp": "2026-10-20T17:04:02.449Z",
           "problem": "1/4 + 1/4",
           "concept_id": "adding_fractions"
         }
@@ -237,7 +237,7 @@
           "id": "rev_nw_1",
           "misconception_id": "M1",
           "intervalDays": 7,
-          "dueDate": "2026-10-25T07:37:15.515Z",
+          "dueDate": "2026-10-25T09:04:02.449Z",
           "completed": false
         }
       ]
@@ -247,7 +247,7 @@
       "name": "Olivia Brown",
       "email": "olivia.b@school.edu",
       "avatar": "OB",
-      "lastActive": "2026-10-21T23:37:15.515Z",
+      "lastActive": "2026-10-22T01:04:02.449Z",
       "overallMastery": 48,
       "masteryByConcept": {
         "equal_parts": 70,
@@ -266,7 +266,7 @@
           "status": "confirmed",
           "confidence": 0.94,
           "evidence": "Computed 2/3 + 1/2 = 3/5.",
-          "timestamp": "2026-10-21T22:37:15.515Z",
+          "timestamp": "2026-10-22T00:04:02.449Z",
           "problem": "2/3 + 1/2",
           "concept_id": "adding_fractions"
         },
@@ -276,7 +276,7 @@
           "status": "confirmed",
           "confidence": 0.84,
           "evidence": "Argued that 3/5 and 3/8 are the exact same value since \"both have 3 on top\".",
-          "timestamp": "2026-10-21T16:37:15.515Z",
+          "timestamp": "2026-10-21T18:04:02.449Z",
           "problem": "Compare 3/5 and 3/8",
           "concept_id": "comparing_fractions"
         }
@@ -288,7 +288,7 @@
       "name": "Lucas Davis",
       "email": "lucas.d@school.edu",
       "avatar": "LD",
-      "lastActive": "2026-10-22T03:37:15.515Z",
+      "lastActive": "2026-10-22T05:04:02.449Z",
       "overallMastery": 58,
       "masteryByConcept": {
         "equal_parts": 80,
@@ -307,7 +307,7 @@
           "status": "confirmed",
           "confidence": 0.88,
           "evidence": "Answered 1/5 + 2/3 = 3/8.",
-          "timestamp": "2026-10-22T02:37:15.515Z",
+          "timestamp": "2026-10-22T04:04:02.449Z",
           "problem": "1/5 + 2/3",
           "concept_id": "adding_fractions"
         },
@@ -317,7 +317,7 @@
           "status": "suspected",
           "confidence": 0.72,
           "evidence": "Did not understand why 1/5 and 2/3 need to be partitioned into fifteenths.",
-          "timestamp": "2026-10-22T02:37:15.515Z",
+          "timestamp": "2026-10-22T04:04:02.449Z",
           "problem": "Explain partitioning",
           "concept_id": "common_denominators"
         }
@@ -329,7 +329,7 @@
       "name": "Mia Garcia",
       "email": "mia.g@school.edu",
       "avatar": "MG",
-      "lastActive": "2026-10-20T19:37:15.515Z",
+      "lastActive": "2026-10-20T21:04:02.449Z",
       "overallMastery": 84,
       "masteryByConcept": {
         "equal_parts": 95,
@@ -348,7 +348,7 @@
           "status": "resolved",
           "confidence": 0.89,
           "evidence": "Missed reducing 6/12 to 1/2.",
-          "timestamp": "2026-10-20T17:37:15.515Z",
+          "timestamp": "2026-10-20T19:04:02.449Z",
           "problem": "Simplify 6/12",
           "concept_id": "equivalent_fractions"
         }
@@ -360,7 +360,7 @@
       "name": "Ethan Miller",
       "email": "ethan.m@school.edu",
       "avatar": "EM",
-      "lastActive": "2026-10-22T00:37:15.515Z",
+      "lastActive": "2026-10-22T02:04:02.449Z",
       "overallMastery": 50,
       "masteryByConcept": {
         "equal_parts": 75,
@@ -379,7 +379,7 @@
           "status": "confirmed",
           "confidence": 0.93,
           "evidence": "Added 1/7 + 2/3 = 3/10.",
-          "timestamp": "2026-10-21T23:37:15.515Z",
+          "timestamp": "2026-10-22T01:04:02.449Z",
           "problem": "1/7 + 2/3",
           "concept_id": "adding_fractions"
         },
@@ -389,7 +389,7 @@
           "status": "confirmed",
           "confidence": 0.85,
           "evidence": "Selected 1/10 as bigger than 1/2.",
-          "timestamp": "2026-10-21T19:37:15.515Z",
+          "timestamp": "2026-10-21T21:04:02.449Z",
           "problem": "Which slice would you rather have: 1/2 of cake or 1/10?",
           "concept_id": "comparing_fractions"
         }
@@ -401,7 +401,7 @@
       "name": "Ava Wilson",
       "email": "ava.w@school.edu",
       "avatar": "AW",
-      "lastActive": "2026-10-21T20:37:15.515Z",
+      "lastActive": "2026-10-21T22:04:02.449Z",
       "overallMastery": 35,
       "masteryByConcept": {
         "equal_parts": 50,
@@ -420,7 +420,7 @@
           "status": "confirmed",
           "confidence": 0.97,
           "evidence": "Repeatedly adds across: 1/4 + 1/2 = 2/6 = 1/3.",
-          "timestamp": "2026-10-21T20:37:15.515Z",
+          "timestamp": "2026-10-21T22:04:02.449Z",
           "problem": "1/4 + 1/2",
           "concept_id": "adding_fractions"
         },
@@ -430,7 +430,7 @@
           "status": "confirmed",
           "confidence": 0.91,
           "evidence": "Insists \"top is one math problem, bottom is another math problem\".",
-          "timestamp": "2026-10-21T17:37:15.515Z",
+          "timestamp": "2026-10-21T19:04:02.449Z",
           "problem": "What does 3/4 mean?",
           "concept_id": "part_of_whole"
         },
@@ -440,7 +440,7 @@
           "status": "confirmed",
           "confidence": 0.88,
           "evidence": "Unable to explain why 1/2 cup and 1/3 cup cannot simply be called 2 halves or 2 fifths.",
-          "timestamp": "2026-10-21T11:37:15.515Z",
+          "timestamp": "2026-10-21T13:04:02.449Z",
           "problem": "Measuring cups scenario",
           "concept_id": "common_denominators"
         }
@@ -452,7 +452,7 @@
       "name": "James Anderson",
       "email": "james.a@school.edu",
       "avatar": "JA",
-      "lastActive": "2026-10-21T09:37:15.515Z",
+      "lastActive": "2026-10-21T11:04:02.449Z",
       "overallMastery": 72,
       "masteryByConcept": {
         "equal_parts": 90,
@@ -471,7 +471,7 @@
           "status": "resolved",
           "confidence": 0.86,
           "evidence": "Fixed initial numerator/denominator addition after Socratic probe with 1/2 + 1/2.",
-          "timestamp": "2026-10-20T10:37:15.515Z",
+          "timestamp": "2026-10-20T12:04:02.449Z",
           "problem": "1/2 + 1/2",
           "concept_id": "adding_fractions"
         },
@@ -481,7 +481,7 @@
           "status": "resolved",
           "confidence": 0.89,
           "evidence": "Demonstrated mastery by accurately drawing 1/3 vs 1/8 on fraction bar.",
-          "timestamp": "2026-10-21T01:37:15.515Z",
+          "timestamp": "2026-10-21T03:04:02.449Z",
           "problem": "Compare 1/3 and 1/8",
           "concept_id": "comparing_fractions"
         }
@@ -491,7 +491,7 @@
           "id": "rev_ja_1",
           "misconception_id": "M1",
           "intervalDays": 3,
-          "dueDate": "2026-10-23T01:37:15.515Z",
+          "dueDate": "2026-10-23T03:04:02.449Z",
           "completed": false
         }
       ]
@@ -501,7 +501,7 @@
       "name": "Isabella Taylor",
       "email": "isabella.t@school.edu",
       "avatar": "IT",
-      "lastActive": "2026-10-22T04:37:15.515Z",
+      "lastActive": "2026-10-22T06:04:02.449Z",
       "overallMastery": 61,
       "masteryByConcept": {
         "equal_parts": 82,
@@ -520,7 +520,7 @@
           "status": "confirmed",
           "confidence": 0.91,
           "evidence": "Added 3/7 + 1/2 = 4/9.",
-          "timestamp": "2026-10-22T03:37:15.515Z",
+          "timestamp": "2026-10-22T05:04:02.449Z",
           "problem": "3/7 + 1/2",
           "concept_id": "adding_fractions"
         },
@@ -530,7 +530,7 @@
           "status": "confirmed",
           "confidence": 0.82,
           "evidence": "Ignored denominator conversion requirement.",
-          "timestamp": "2026-10-22T02:37:15.515Z",
+          "timestamp": "2026-10-22T04:04:02.449Z",
           "problem": "Why find common denominators?",
           "concept_id": "common_denominators"
         }
@@ -542,7 +542,7 @@
       "name": "Benjamin Thomas",
       "email": "benjamin.t@school.edu",
       "avatar": "BT",
-      "lastActive": "2026-10-21T15:37:15.515Z",
+      "lastActive": "2026-10-21T17:04:02.449Z",
       "overallMastery": 53,
       "masteryByConcept": {
         "equal_parts": 75,
@@ -561,7 +561,7 @@
           "status": "confirmed",
           "confidence": 0.89,
           "evidence": "Answered 2/3 + 3/4 = 5/7.",
-          "timestamp": "2026-10-21T14:37:15.515Z",
+          "timestamp": "2026-10-21T16:04:02.449Z",
           "problem": "2/3 + 3/4",
           "concept_id": "adding_fractions"
         },
@@ -571,7 +571,7 @@
           "status": "confirmed",
           "confidence": 0.87,
           "evidence": "Claimed 4/5 equals 4/9 since both share numerator 4.",
-          "timestamp": "2026-10-21T06:37:15.515Z",
+          "timestamp": "2026-10-21T08:04:02.449Z",
           "problem": "Compare 4/5 and 4/9",
           "concept_id": "comparing_fractions"
         }
@@ -583,7 +583,7 @@
       "name": "Charlotte Jackson",
       "email": "charlotte.j@school.edu",
       "avatar": "CJ",
-      "lastActive": "2026-10-21T02:37:15.515Z",
+      "lastActive": "2026-10-21T04:04:02.449Z",
       "overallMastery": 79,
       "masteryByConcept": {
         "equal_parts": 92,
@@ -602,7 +602,7 @@
           "status": "resolved",
           "confidence": 0.88,
           "evidence": "Overcame denominator confusion using circle slice models.",
-          "timestamp": "2026-10-20T05:37:15.515Z",
+          "timestamp": "2026-10-20T07:04:02.449Z",
           "problem": "Compare 1/5 and 1/15",
           "concept_id": "comparing_fractions"
         }
@@ -614,7 +614,7 @@
       "name": "Henry White",
       "email": "henry.w@school.edu",
       "avatar": "HW",
-      "lastActive": "2026-10-22T01:37:15.515Z",
+      "lastActive": "2026-10-22T03:04:02.449Z",
       "overallMastery": 45,
       "masteryByConcept": {
         "equal_parts": 65,
@@ -633,7 +633,7 @@
           "status": "confirmed",
           "confidence": 0.94,
           "evidence": "Added 5/6 + 1/3 = 6/9.",
-          "timestamp": "2026-10-22T00:37:15.515Z",
+          "timestamp": "2026-10-22T02:04:02.449Z",
           "problem": "5/6 + 1/3",
           "concept_id": "adding_fractions"
         },
@@ -643,7 +643,7 @@
           "status": "confirmed",
           "confidence": 0.86,
           "evidence": "Assumed 1/16 is larger than 1/4.",
-          "timestamp": "2026-10-21T17:37:15.515Z",
+          "timestamp": "2026-10-21T19:04:02.449Z",
           "problem": "Compare 1/16 and 1/4",
           "concept_id": "comparing_fractions"
         },
@@ -653,7 +653,7 @@
           "status": "suspected",
           "confidence": 0.78,
           "evidence": "Skipped finding LCD before performing addition.",
-          "timestamp": "2026-10-22T00:37:15.515Z",
+          "timestamp": "2026-10-22T02:04:02.449Z",
           "problem": "Find LCD for 6 and 3",
           "concept_id": "common_denominators"
         }
@@ -665,7 +665,7 @@
       "name": "Harper Harris",
       "email": "harper.h@school.edu",
       "avatar": "HH",
-      "lastActive": "2026-10-21T21:37:15.515Z",
+      "lastActive": "2026-10-21T23:04:02.449Z",
       "overallMastery": 67,
       "masteryByConcept": {
         "equal_parts": 88,
@@ -684,7 +684,7 @@
           "status": "resolved",
           "confidence": 0.85,
           "evidence": "Understands common denominators now after completing Socratic prompt.",
-          "timestamp": "2026-10-20T23:37:15.515Z",
+          "timestamp": "2026-10-21T01:04:02.449Z",
           "problem": "2/5 + 1/10",
           "concept_id": "adding_fractions"
         },
@@ -694,7 +694,7 @@
           "status": "confirmed",
           "confidence": 0.81,
           "evidence": "Hesitated when comparing 5/6 and 5/9, initially thought they might be identical portions.",
-          "timestamp": "2026-10-21T19:37:15.515Z",
+          "timestamp": "2026-10-21T21:04:02.449Z",
           "problem": "Compare 5/6 and 5/9",
           "concept_id": "comparing_fractions"
         }
@@ -704,7 +704,7 @@
           "id": "rev_hh_1",
           "misconception_id": "M1",
           "intervalDays": 1,
-          "dueDate": "2026-10-22T19:37:15.515Z",
+          "dueDate": "2026-10-22T21:04:02.449Z",
           "completed": false
         }
       ]

@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import { TutorResponse, MisconceptionId } from '@/types/database';
+import { getOrCreateSession, processStudentTurn } from './diagnostic/session';
+import { checkResponseForAnswerLeak } from './diagnostic/remediation';
 
 const xaiApiKey = process.env.XAI_API_KEY || '';
 const openRouterApiKey = process.env.OPENROUTER_API_KEY || '';
@@ -66,7 +68,8 @@ export interface TutorMessageContext {
 
 export async function askTutorGrok(
   messages: TutorMessageContext[],
-  studentNotes?: string
+  studentNotes?: string,
+  studentId: string = 'demo_student'
 ): Promise<TutorResponse> {
   // Try live API if client is configured
   if (openaiClient && !isExplicitDemoMode) {
@@ -94,7 +97,14 @@ export async function askTutorGrok(
       const content = response.choices[0]?.message?.content;
       if (content) {
         const parsed = parseAndValidateTutorResponse(content);
-        if (parsed) return parsed;
+        if (parsed) {
+          // Guard against accidental answer leakage in tutor reply
+          const leak = checkResponseForAnswerLeak(parsed.reply, ['5/6', '5/12']);
+          if (leak.hasLeak) {
+            parsed.reply = "Let's explore this step-by-step: what common denominator can you convert these fractions into so their piece sizes match?";
+          }
+          return parsed;
+        }
       }
     } catch (apiError: any) {
       console.warn('[Minerva Tutor] Live API unavailable (' + (apiError.message || apiError) + '), seamlessly engaging dynamic pedagogical engine');
@@ -102,7 +112,7 @@ export async function askTutorGrok(
   }
 
   // Fallback to high-fidelity dynamic conversational engine
-  return getScriptedDemoResponse(messages, studentNotes);
+  return getScriptedDemoResponse(messages, studentNotes, studentId);
 }
 
 function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
@@ -146,11 +156,48 @@ function parseAndValidateTutorResponse(rawJson: string): TutorResponse | null {
 // ==========================================
 export function getScriptedDemoResponse(
   messages: TutorMessageContext[],
-  studentNotes?: string
+  studentNotes?: string,
+  studentId: string = 'demo_student'
 ): TutorResponse {
   const userMessages = messages.filter((m) => m.role === 'user');
   const lastUserMsg = userMessages[userMessages.length - 1]?.content.toLowerCase().trim() || '';
   const previousAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
+
+  // Check if student submission is an answer or probe response
+  const isFractionOrAnswer = 
+    /\b\d+\s*\/\s*\d+\b/.test(lastUserMsg) ||
+    lastUserMsg.includes('opt_') ||
+    lastUserMsg.includes('fifths') ||
+    lastUserMsg.includes('sixths') ||
+    lastUserMsg.includes('sevenths') ||
+    lastUserMsg.includes('eighths') ||
+    lastUserMsg.includes('twelfths') ||
+    lastUserMsg === '5/6' ||
+    lastUserMsg === '2/5' ||
+    lastUserMsg === '5/14' ||
+    lastUserMsg === '5/7' ||
+    lastUserMsg === '1/8' ||
+    lastUserMsg === '1/3' ||
+    lastUserMsg === '2/7' ||
+    lastUserMsg === '4/4' ||
+    lastUserMsg === '5/12';
+
+  if (isFractionOrAnswer) {
+    const session = getOrCreateSession(studentId);
+    const turnResult = processStudentTurn(session, lastUserMsg);
+    return {
+      reply: turnResult.tutorReply,
+      diagnosis: {
+        misconception_id: turnResult.diagnosis.misconception_id as MisconceptionId,
+        confidence: turnResult.diagnosis.confidence,
+        evidence: turnResult.diagnosis.evidence,
+        status: turnResult.diagnosis.status,
+      },
+      hint_level: turnResult.hintLevel,
+      related_concepts: ['common_denominators', 'adding_fractions'],
+      understood: turnResult.understood,
+    };
+  }
 
   // 1. Changing topic / moving on
   if (

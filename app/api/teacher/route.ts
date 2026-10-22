@@ -33,6 +33,8 @@ export async function GET() {
     const misconceptionStats = Object.keys(MISCONCEPTIONS).map((mId) => {
       const meta = MISCONCEPTIONS[mId];
       let activeCount = 0;
+      let confirmedCount = 0;
+      let suspectedCount = 0;
       let resolvedCount = 0;
       let totalStudentsImpacted = 0;
 
@@ -43,6 +45,11 @@ export async function GET() {
           const hasActive = matchingLogs.some(m => m.status === 'confirmed' || m.status === 'suspected');
           if (hasActive) {
             activeCount += 1;
+            if (matchingLogs.some(m => m.status === 'confirmed')) {
+              confirmedCount += 1;
+            } else {
+              suspectedCount += 1;
+            }
           } else if (matchingLogs.some(m => m.status === 'resolved')) {
             resolvedCount += 1;
           }
@@ -58,6 +65,8 @@ export async function GET() {
         example: meta.example,
         remedyHint: meta.remedyHint,
         activeCount,
+        confirmedCount,
+        suspectedCount,
         resolvedCount,
         totalImpacted: totalStudentsImpacted,
         percentage,
